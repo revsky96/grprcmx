@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#171A21">
+<title>Grafik pracy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#171A21;
+    --ink-soft:#4A4F5C;
+    --paper:#F1F2F4;
+    --card:#FFFFFF;
+    --rule:#DFE1E6;
+    --amber:#E3A73E;
+    --amber-deep:#B9832A;
+    --teal:#2F6F6B;
+    --violet:#8B7BA8;
+    --steel:#4C7EA8;
+    --danger:#C1533F;
+    --off:#B7BBC4;
+    --radius:14px;
+    --shadow: 0 1px 2px rgba(23,26,33,.06), 0 6px 20px -8px rgba(23,26,33,.18);
+    /* stable dark surfaces — same in both themes, used for the top bar, primary
+       buttons and "chip" style selections so they always read as high-contrast */
+    --accent-strong:#171A21;
+    --topbar:#14161C;
+    --me-tint:#FFF9EE;
+  }
+  [data-theme="dark"]{
+    --ink:#ECEDF0;
+    --ink-soft:#9AA0AC;
+    --paper:#101215;
+    --card:#1C1F26;
+    --rule:#2C2F37;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px -8px rgba(0,0,0,.5);
+    --me-tint: rgba(227,167,62,.14);
+  }
+  html{background:var(--paper);}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:var(--paper);}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    color:var(--ink);
+    overscroll-behavior-y:none;
+    display:flex;
+    justify-content:center;
+    transition:background .2s, color .2s;
+  }
+  #app{
+    width:100%;
+    max-width:520px;
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    background:var(--paper);
+    position:relative;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .disp{font-family:'Barlow Condensed',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+
+  /* ---------- Top bar ---------- */
+  header.topbar{
+    background:var(--topbar);
+    color:#fff;
+    padding:18px 18px 14px;
+    position:sticky; top:0; z-index:20;
+    padding-top:max(18px, env(safe-area-inset-top));
+  }
+  .brand-row{display:flex; align-items:center; justify-content:space-between;}
+  .brand{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--amber);display:inline-block;}
+  .theme-toggle{
+    background:rgba(255,255,255,.08); border:none; color:#fff; width:34px; height:34px; border-radius:10px;
+    font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .month-row{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:12px;
+  }
+  .month-nav{display:flex; align-items:center; gap:10px;}
+  .month-btn{
+    background:rgba(255,255,255,.08); border:none; color:#fff;
+    width:32px;height:32px;border-radius:9px; font-size:16px; cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .month-btn:disabled{opacity:.25;}
+  .month-label{font-family:'Barlow Condensed',sans-serif; font-size:19px; font-weight:600; letter-spacing:.02em; min-width:150px; text-align:center;}
+  .who-btn{
+    background:var(--amber); color:var(--accent-strong); border:none; border-radius:20px;
+    padding:7px 14px 7px 10px; font-weight:600; font-size:13px; display:flex; gap:6px; align-items:center;
+    cursor:pointer;
+  }
+  .who-avatar{width:20px;height:20px;border-radius:50%;background:var(--accent-strong);color:var(--amber);
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+
+  /* ---------- content ---------- */
+  main{flex:1; overflow-y:auto; padding:14px 14px 96px;}
+  .empty-state{
+    margin-top:14vh; text-align:center; color:var(--ink-soft); padding:0 20px;
+  }
+  .empty-state .icon{font-size:40px; margin-bottom:10px;}
+  .empty-state h2{font-family:'Barlow Condensed',sans-serif; font-size:22px; color:var(--ink); margin:0 0 6px;}
+  .btn-primary{
+    margin-top:16px; background:var(--accent-strong); color:#fff; border:none; padding:12px 22px;
+    border-radius:12px; font-weight:600; font-size:15px; cursor:pointer;
+  }
+  .ghost-btn{
+    width:100%; background:none; border:1px solid var(--rule); color:var(--ink-soft); padding:10px 14px;
+    border-radius:12px; font-weight:600; font-size:12.5px; cursor:pointer; margin-bottom:16px;
+  }
+
+  /* month calendar (Mój grafik) */
+  .month-cal-wrap{
+    background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:12px 10px 14px; margin-bottom:16px;
+  }
+  .month-cal{display:grid; grid-template-columns:repeat(7,1fr); gap:5px;}
+  .cal-dow{font-size:9.5px; color:var(--ink-soft); text-align:center; text-transform:uppercase; padding-bottom:4px; font-weight:600;}
+  .cal-cell{
+    aspect-ratio:1/1; border-radius:9px; background:var(--paper); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; cursor:pointer; position:relative;
+  }
+  .cal-cell.empty{background:transparent; cursor:default;}
+  .cal-cell .cd{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; line-height:1;}
+  .cal-cell .ct{font-family:'JetBrains Mono',monospace; font-size:8px; margin-top:2px; line-height:1;}
+  .cal-cell.shift{background:rgba(227,167,62,.2); color:var(--amber-deep);}
+  .cal-cell.szkolenie{background:rgba(76,126,168,.16); color:var(--steel);}
+  .cal-cell.urlop{background:rgba(139,123,168,.16); color:var(--violet);}
+  .cal-cell.l4{background:rgba(193,83,63,.14); color:var(--danger);}
+  .cal-cell.off .cd{color:var(--off);}
+  .cal-cell.nontrading{opacity:.35;}
+  .cal-cell.today{box-shadow:0 0 0 2px var(--ink) inset;}
+
+  /* summary card */
+  .summary{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px;
+  }
+  .summary .cell{
+    background:var(--card); border-radius:12px; padding:10px 6px; text-align:center; box-shadow:var(--shadow);
+  }
+  .summary .cell .num{font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700;}
+  .summary .cell .lab{font-size:10px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-top:2px;}
+
+  /* day ticket list */
+  .ticket{
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    display:flex; margin-bottom:9px; overflow:hidden; cursor:pointer; position:relative;
+    border:1px solid transparent;
+  }
+  .ticket.today{border-color:var(--amber);}
+  .ticket .bar{width:6px; flex-shrink:0;}
+  .bar.shift{background:var(--amber);}
+  .bar.urlop{background:var(--violet);}
+  .bar.szkolenie{background:var(--steel);}
+  .bar.off{background:var(--off);}
+  .bar.nontrading{background:var(--rule);}
+  .ticket .date-block{
+    width:56px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-right:1px dashed var(--rule); padding:10px 4px;
+  }
+  .date-block .dnum{font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:700; line-height:1;}
+  .date-block .dwk{font-size:10px; color:var(--ink-soft); text-transform:uppercase; margin-top:3px; letter-spacing:.03em;}
+  .ticket .info{flex:1; padding:11px 14px; display:flex; flex-direction:column; justify-content:center; gap:2px; min-width:0;}
+  .info .top-row{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
+  .info .time{font-family:'JetBrains Mono',monospace; font-weight:600; font-size:16px;}
+  .info .hours{font-size:12px; color:var(--ink-soft);}
+  .info .badge{
+    display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+    padding:3px 9px; border-radius:20px;
+  }
+  .badge.urlop{background:rgba(139,123,168,.15); color:var(--violet);}
+  .badge.szkolenie{background:rgba(76,126,168,.15); color:var(--steel);}
+  .badge.off{background:rgba(183,187,196,.2); color:var(--ink-soft);}
+  .badge.l4{background:rgba(193,83,63,.13); color:var(--danger);}
+  .badge.nontrading{background:rgba(0,0,0,.04); color:var(--ink-soft);}
+  .info .sub{font-size:12px; color:var(--ink-soft); margin-top:1px;}
+  .ticket .chevron{align-self:center; padding-right:12px; color:var(--rule); font-size:18px;}
+
+  /* day view */
+  .day-strip{display:flex; gap:7px; overflow-x:auto; padding:4px 2px 14px; scrollbar-width:none;}
+  .day-strip::-webkit-scrollbar{display:none;}
+  .day-chip{
+    flex-shrink:0; width:50px; height:64px; border-radius:12px; background:var(--card); box-shadow:var(--shadow);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;
+    border:2px solid transparent;
+  }
+  .day-chip.selected{border-color:var(--accent-strong); background:var(--accent-strong); color:#fff;}
+  .day-chip .n{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:20px;}
+  .day-chip .w{font-size:9px; text-transform:uppercase; opacity:.65; margin-top:2px;}
+  .day-chip.mine::after{content:''; width:5px;height:5px;border-radius:50%;background:var(--amber); margin-top:3px;}
+  .day-chip.nontrading{opacity:.4;}
+
+  .day-heading{display:flex; align-items:baseline; justify-content:space-between; margin:4px 0 10px;}
+  .day-heading h2{font-family:'Barlow Condensed',sans-serif; font-size:22px; margin:0; text-transform:capitalize;}
+  .day-heading .count{font-size:12px; color:var(--ink-soft);}
+
+  .worker-row{
+    display:flex; align-items:center; gap:11px; background:var(--card); border-radius:12px; box-shadow:var(--shadow);
+    padding:11px 13px 11px 10px; margin-bottom:8px;
+  }
+  .worker-row.me{background:var(--me-tint);}
+  .worker-row .cat-bar{width:4px; align-self:stretch; border-radius:3px; flex-shrink:0;}
+  .worker-row .initial{
+    width:34px;height:34px;border-radius:50%;background:var(--paper); color:var(--ink-soft);
+    display:flex;align-items:center;justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;
+  }
+  .worker-row.me .initial{background:var(--amber); color:var(--accent-strong);}
+  .worker-row .wname{font-weight:600; font-size:14.5px; flex:1; min-width:0;}
+  .worker-row .wname .you-tag{font-size:10px; color:var(--amber-deep); font-weight:700; margin-left:6px;}
+  .worker-row .wtime{font-family:'JetBrains Mono',monospace; font-weight:600; font-size:14px; text-align:right;}
+  .worker-row .wtime .wh{display:block; font-size:10px; color:var(--ink-soft); font-family:'Inter',sans-serif; font-weight:500; text-align:right;}
+  .wtime-col{display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0;}
+  .wtags{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; max-width:120px;}
+  .task-tag{
+    display:inline-block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+    padding:2px 6px; border-radius:10px; color:#fff;
+  }
+  .task-tag.close{background:var(--danger);}
+  .task-tag.keys{background:#3E8E5B;}
+  .task-tag.delivery{background:var(--steel);}
+  .task-tag.social{background:#C79A2E;}
+  .nontrading-card{
+    text-align:center; padding:34px 20px; color:var(--ink-soft); background:var(--card); border-radius:14px; box-shadow:var(--shadow);
+  }
+
+  /* gantt chart — people on Y axis, time on X axis, grouped by category */
+  .gantt-card{
+    background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:14px 12px 10px; margin-bottom:14px;
+  }
+  .gantt-axis{position:relative; height:16px; margin:0 0 8px 82px;}
+  .gantt-axis .hr{position:absolute; transform:translateX(-50%); font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--ink-soft);}
+  .gantt-cat-label{
+    font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.03em; color:var(--ink-soft); margin:12px 0 5px 82px;
+  }
+  .gantt-cat-label:first-of-type{margin-top:0;}
+  .gantt-row{display:flex; align-items:center; margin-bottom:6px;}
+  .gantt-name{
+    width:82px; flex-shrink:0; font-size:12px; font-weight:600; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; padding-right:8px;
+  }
+  .gantt-name.me{color:var(--amber-deep);}
+  .gantt-track{flex:1; min-width:0; position:relative; height:26px; background:var(--paper); border-radius:7px;}
+  .gantt-gridline{position:absolute; top:0; bottom:0; width:1px; background:var(--rule);}
+  .gantt-bar{
+    position:absolute; top:0; bottom:0; border-radius:7px; display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .gantt-bar.me{box-shadow:0 0 0 2px var(--amber) inset;}
+  .gantt-bar-label{font-family:'JetBrains Mono',monospace; font-size:8.5px; color:#fff; white-space:nowrap; padding:0 5px;}
+  .gantt-legend{
+    display:flex; flex-wrap:wrap; gap:8px 12px; margin:10px 0 2px 0; padding-top:9px; border-top:1px solid var(--rule);
+  }
+  .legend-item{display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--ink-soft);}
+  .legend-dot{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+
+  /* upload tab */
+  .section-title{font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; margin:18px 0 8px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft);}
+  .section-title:first-child{margin-top:0;}
+  .upload-zone{
+    border:2px dashed var(--rule); border-radius:16px; padding:28px 16px; text-align:center; background:var(--card);
+    cursor:pointer;
+  }
+  .upload-zone .icon{font-size:30px;}
+  .upload-zone h3{font-family:'Barlow Condensed',sans-serif; font-size:18px; margin:8px 0 4px;}
+  .upload-zone p{font-size:12.5px; color:var(--ink-soft); margin:0;}
+  .month-list-item{
+    display:flex; align-items:center; justify-content:space-between; background:var(--card); border-radius:12px;
+    padding:12px 14px; margin-bottom:8px; box-shadow:var(--shadow);
+  }
+  .month-list-item .mname{font-weight:600; font-size:14.5px;}
+  .month-list-item .msub{font-size:11.5px; color:var(--ink-soft);}
+  .icon-btn{background:none;border:none;color:var(--ink-soft);font-size:16px;cursor:pointer;padding:6px;}
+  .icon-btn.danger{color:var(--danger);}
+  .toast{
+    position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:var(--accent-strong); color:#fff;
+    padding:10px 18px; border-radius:24px; font-size:13px; font-weight:500; box-shadow:var(--shadow); z-index:60;
+    opacity:0; transition:opacity .25s, transform .25s; pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+
+  /* modal for choosing name */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(23,26,33,.5); z-index:80; display:flex; align-items:flex-end;
+  }
+  .modal-sheet{
+    background:var(--paper); width:100%; max-width:520px; margin:0 auto; border-radius:20px 20px 0 0;
+    padding:20px 18px max(20px, env(safe-area-inset-bottom)); max-height:78vh; overflow-y:auto;
+  }
+  .modal-sheet h3{font-family:'Barlow Condensed',sans-serif; font-size:21px; margin:2px 0 14px;}
+  .name-option{
+    display:flex; align-items:center; gap:12px; padding:13px 10px; border-radius:12px; cursor:pointer;
+  }
+  .name-option:active{background:var(--rule);}
+  .name-option .initial{width:32px;height:32px;border-radius:50%;background:var(--card); color:var(--ink-soft);
+    display:flex;align-items:center;justify-content:center; font-weight:700; font-size:13px;}
+  .name-option.active .initial{background:var(--amber); color:var(--accent-strong);}
+  .name-option span{font-weight:600; font-size:15px;}
+  .modal-close{width:100%; padding:12px; text-align:center; background:none; border:none; color:var(--ink-soft); font-weight:600; margin-top:6px; cursor:pointer;}
+  .modal-close.danger{color:var(--danger);}
+
+  /* day-edit form fields */
+  .field-group{margin-bottom:12px;}
+  .field-label{display:block; font-size:11.5px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.02em; margin-bottom:5px;}
+  .field-input{
+    width:100%; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; color:var(--ink);
+    background:var(--card); border:1px solid var(--rule); border-radius:10px; padding:10px 11px;
+    -webkit-appearance:none; appearance:none;
+  }
+  .field-row{display:flex; gap:10px;}
+  .field-row .field-group{flex:1;}
+  .edit-btn{
+    align-self:center; margin-right:10px; background:none; border:none; font-size:15px; cursor:pointer;
+    color:var(--ink-soft); padding:6px; flex-shrink:0;
+  }
+  .overtime-sub{color:var(--amber-deep) !important; font-weight:600;}
+  .edited-mark{font-size:11px; color:var(--amber-deep);}
+  .cal-cell.is-edited::after{
+    content:''; position:absolute; top:4px; right:4px; width:5px; height:5px; border-radius:50%; background:var(--amber-deep);
+  }
+  .summary5{grid-template-columns:repeat(5,1fr);}
+  .summary5 .num{font-size:18px;}
+
+  /* bottom nav */
+  nav.bottombar{
+    position:fixed; bottom:0; left:0; right:0; display:flex; justify-content:center; z-index:30;
+  }
+  .bottombar-inner{
+    width:100%; max-width:520px; background:var(--card); border-top:1px solid var(--rule);
+    display:flex; padding:6px 8px max(6px, env(safe-area-inset-bottom));
+    box-shadow: 0 -4px 16px rgba(23,26,33,.06);
+  }
+  .navbtn{
+    flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:7px 0 6px; color:var(--ink-soft); cursor:pointer; font-family:'Inter',sans-serif; font-size:9px; font-weight:600;
+    text-transform:uppercase; letter-spacing:.01em; white-space:nowrap;
+  }
+  .navbtn.active{color:var(--ink);}
+  .navbtn .ic{font-size:17px;}
+  .navbtn.active .ic{color:var(--amber-deep);}
+  input[type=file]{display:none;}
+  .hint{font-size:12px; color:var(--ink-soft); line-height:1.5; margin-top:10px;}
+
+  /* options tab — role assignment */
+  .role-row{
+    display:flex; align-items:center; gap:11px; background:var(--card); border-radius:12px; box-shadow:var(--shadow);
+    padding:10px 13px; margin-bottom:8px;
+  }
+  .role-row .cat-bar{width:4px; align-self:stretch; border-radius:3px; flex-shrink:0;}
+  .role-row.unassigned{box-shadow:0 0 0 2px var(--amber) inset, var(--shadow);}
+  .role-row .rname{font-weight:600; font-size:14.5px; flex:1; min-width:0;}
+  .role-row .rname .rsub{display:block; font-size:11px; font-weight:500; color:var(--amber-deep); margin-top:1px;}
+  .role-select{
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color:var(--ink);
+    background:var(--paper); border:1px solid var(--rule); border-radius:9px; padding:7px 8px;
+    -webkit-appearance:none; appearance:none;
+  }
+  .role-locked{font-size:12.5px; color:var(--ink-soft); font-weight:600; padding:7px 4px;}
+
+  /* Pensja tab */
+  .disclaimer-box{
+    background:rgba(227,167,62,.14); border:1px solid rgba(227,167,62,.4); color:var(--amber-deep);
+    border-radius:12px; padding:12px 14px; font-size:12.5px; line-height:1.5; font-weight:600; margin-bottom:16px;
+  }
+  .pay-card{background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:14px; margin-bottom:16px;}
+  .pay-subtitle{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px; text-transform:uppercase; letter-spacing:.02em; color:var(--ink-soft);}
+  .pay-subtotal{font-size:12.5px; color:var(--ink-soft); margin-top:6px; text-align:right;}
+  .checkbox-row{display:flex; align-items:center; gap:9px; font-size:14px; font-weight:600; margin-top:4px; cursor:pointer;}
+  .checkbox-row input{width:18px; height:18px; accent-color:var(--amber-deep);}
+  .pay-result-card{background:var(--card); border-radius:14px; box-shadow:var(--shadow); padding:16px 16px 14px; margin-top:6px;}
+  .pay-breakdown{margin-bottom:10px;}
+  .pb-row{display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-soft); padding:3px 0;}
+  .pay-total-row{display:flex; justify-content:space-between; align-items:baseline; padding-top:10px; border-top:1px solid var(--rule);}
+  .pay-total-row.net{border-top:none; padding-top:4px;}
+  .pt-label{font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:600; color:var(--ink-soft); text-transform:uppercase;}
+  .pay-total-row .pt-value{font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600;}
+  .pay-total-row.net .pt-value{font-size:24px; color:var(--amber-deep);}
+</style>
+<script type="application/json" id="seedData">{"monthKey": "2026-09", "label": "Wrzesień 2026", "employees": ["Dawid", "Maciej", "Amelia", "Jakub", "Viktorija", "Karolina", "Sebastian", "Krystian", "Mateusz Ch.", "Michał", "Olaf", "Mateusz R.", "Dawid D", "Amadeusz"], "days": [{"dateISO": "2026-09-01", "day": 1, "weekday": "wtorek", "headcount": 10.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "off"}, "Maciej": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Amelia": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Krystian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Mateusz Ch.": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Michał": {"type": "off"}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "16:00", "startMin": 540, "hours": 7.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Amelia", "close2": "Krystian", "delivery": "Mateusz R.", "social": "Amelia", "keys1": "Amelia", "keys2": "Krystian"}}, {"dateISO": "2026-09-02", "day": 2, "weekday": "środa", "headcount": 11.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "off"}, "Maciej": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Amelia": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Krystian": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Mateusz Ch.": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Michał": {"type": "off"}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "10:30", "end": "20:00", "startMin": 630, "hours": 9.5}, "Dawid D": {"type": "shift", "start": "09:00", "end": "16:00", "startMin": 540, "hours": 7.0}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Amelia", "close2": "Sebastian", "delivery": "Dawid D", "social": "Jakub", "keys1": "Amelia", "keys2": "Sebastian"}}, {"dateISO": "2026-09-03", "day": 3, "weekday": "czwartek", "headcount": 8.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "15:30", "startMin": 540, "hours": 6.5}, "Maciej": {"type": "off"}, "Amelia": {"type": "shift", "start": "09:00", "end": "15:00", "startMin": 540, "hours": 6.0}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Michał": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "off"}, "Dawid D": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Viktorija", "close2": "Dawid D", "delivery": "Michał", "social": "Viktorija", "keys1": "Viktorija", "keys2": "Dawid D"}}, {"dateISO": "2026-09-04", "day": 4, "weekday": "piątek", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "19:00", "startMin": 540, "hours": 10.0}, "Amelia": {"type": "off"}, "Jakub": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Viktorija": {"type": "shift", "start": "09:00", "end": "15:00", "startMin": 540, "hours": 6.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Krystian": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Michał": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "off"}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Viktorija", "close2": "Sebastian", "delivery": "Krystian", "social": "Sebastian", "keys1": "Viktorija", "keys2": "Sebastian"}}, {"dateISO": "2026-09-05", "day": 5, "weekday": "sobota", "headcount": 8.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "19:00", "startMin": 540, "hours": 10.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Amelia": {"type": "off"}, "Jakub": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Viktorija": {"type": "off"}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "16:00", "startMin": 540, "hours": 7.0}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Michał": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Jakub", "close2": "Maciej", "delivery": "Sebastian", "social": "Krystian", "keys1": "Jakub", "keys2": "Maciej"}}, {"dateISO": "2026-09-06", "day": 6, "weekday": "niedziela", "headcount": 0.0, "isNonTrading": true, "note": "NIEDZIELA NIEHANDLOWA", "shifts": {"Maciej": {"type": "off"}, "Amelia": {"type": "off"}, "Jakub": {"type": "off"}, "Viktorija": {"type": "off"}, "Karolina": {"type": "off"}, "Sebastian": {"type": "off"}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "off"}, "Olaf": {"type": "off"}, "Mateusz R.": {"type": "off"}, "Dawid D": {"type": "off"}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": null, "close2": null, "delivery": null, "social": null, "keys1": null, "keys2": null}}, {"dateISO": "2026-09-07", "day": 7, "weekday": "poniedziałek", "headcount": 13.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "06:30", "end": "20:00", "startMin": 390, "hours": 13.5}, "Maciej": {"type": "shift", "start": "06:30", "end": "20:00", "startMin": 390, "hours": 13.5}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "06:30", "end": "20:00", "startMin": 390, "hours": 13.5}, "Viktorija": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "06:30", "end": "18:30", "startMin": 390, "hours": 12.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "shift", "start": "06:30", "end": "12:00", "startMin": 390, "hours": 5.5}, "Michał": {"type": "shift", "start": "06:30", "end": "20:00", "startMin": 390, "hours": 13.5}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "06:30", "end": "20:00", "startMin": 390, "hours": 13.5}, "Dawid D": {"type": "shift", "start": "06:30", "end": "18:00", "startMin": 390, "hours": 11.5}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Jakub", "close2": "Mateusz R.", "delivery": "Mateusz R.", "social": "Michał", "keys1": "Jakub", "keys2": "Mateusz R."}}, {"dateISO": "2026-09-08", "day": 8, "weekday": "wtorek", "headcount": 10.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "06:30", "end": "19:00", "startMin": 390, "hours": 12.5}, "Maciej": {"type": "shift", "start": "06:30", "end": "20:00", "startMin": 390, "hours": 13.5}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Viktorija": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "shift", "start": "14:00", "end": "20:00", "startMin": 840, "hours": 6.0}, "Michał": {"type": "off"}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "06:30", "end": "18:00", "startMin": 390, "hours": 11.5}, "Dawid D": {"type": "shift", "start": "06:30", "end": "18:00", "startMin": 390, "hours": 11.5}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Jakub", "close2": "Maciej", "delivery": "Dawid D", "social": "Mateusz R.", "keys1": "Jakub", "keys2": "Maciej"}}, {"dateISO": "2026-09-09", "day": 9, "weekday": "środa", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "off"}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "off"}, "Dawid D": {"type": "shift", "start": "06:30", "end": "18:00", "startMin": 390, "hours": 11.5}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Viktorija", "close2": "Maciej", "delivery": "Michał", "social": "Dawid D", "keys1": "Viktorija", "keys2": "Maciej"}}, {"dateISO": "2026-09-10", "day": 10, "weekday": "czwartek", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "off"}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "off"}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "shift", "start": "12:00", "end": "20:00", "startMin": 720, "hours": 8.0}, "Michał": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "off"}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Jakub", "close2": "Sebastian", "delivery": "Sebastian", "social": "Mateusz C", "keys1": "Jakub", "keys2": "Sebastian"}}, {"dateISO": "2026-09-11", "day": 11, "weekday": "piątek", "headcount": 11.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Michał": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "15:00", "startMin": 540, "hours": 6.0}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Jakub", "close2": "Sebastian", "delivery": "Amadeusz", "social": "Jakub", "keys1": "Jakub", "keys2": "Sebastian"}}, {"dateISO": "2026-09-12", "day": 12, "weekday": "sobota", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Michał": {"type": "off"}, "Olaf": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Jakub", "close2": "Mateusz C", "delivery": "Amadeusz", "social": "Viktorija", "keys1": "Jakub", "keys2": "Mateusz C"}}, {"dateISO": "2026-09-13", "day": 13, "weekday": "niedziela", "headcount": 0.0, "isNonTrading": true, "note": "NIEDZIELA NIEHANDLOWA", "shifts": {"Maciej": {"type": "off"}, "Amelia": {"type": "off"}, "Jakub": {"type": "off"}, "Viktorija": {"type": "off"}, "Karolina": {"type": "off"}, "Sebastian": {"type": "off"}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "off"}, "Olaf": {"type": "off"}, "Mateusz R.": {"type": "off"}, "Dawid D": {"type": "off"}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": null, "close2": null, "delivery": null, "social": null, "keys1": null, "keys2": null}}, {"dateISO": "2026-09-14", "day": 14, "weekday": "poniedziałek", "headcount": 13.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Viktorija": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "off"}, "Olaf": {"type": "shift", "start": "12:00", "end": "20:00", "startMin": 720, "hours": 8.0}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Viktorija", "close2": "Olaf", "delivery": "Amadeusz", "social": "Sebastian", "keys1": "Viktorija", "keys2": "Olaf"}}, {"dateISO": "2026-09-15", "day": 15, "weekday": "wtorek", "headcount": 10.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "off"}, "Viktorija": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "shift", "start": "09:00", "end": "17:30", "startMin": 540, "hours": 8.5}, "Olaf": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Mateusz R.": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Viktorija", "close2": "Sebastian", "delivery": "Amadeusz", "social": "Michał", "keys1": "Viktorija", "keys2": "Sebastian"}}, {"dateISO": "2026-09-16", "day": 16, "weekday": "środa", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Olaf": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Jakub", "close2": "Mateusz R.", "delivery": "Olaf", "social": "Olaf", "keys1": "Jakub", "keys2": "Mateusz R."}}, {"dateISO": "2026-09-17", "day": 17, "weekday": "czwartek", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "off"}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Olaf": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Viktorija", "close2": "Maciej", "delivery": "Amadeusz", "social": "Dawid D", "keys1": "Viktorija", "keys2": "Maciej"}}, {"dateISO": "2026-09-18", "day": 18, "weekday": "piątek", "headcount": 10.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "off"}, "Olaf": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Mateusz R.": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Viktorija", "close2": "Olaf", "delivery": "Amadeusz", "social": "Mateusz R.", "keys1": "Viktorija", "keys2": "Olaf"}}, {"dateISO": "2026-09-19", "day": 19, "weekday": "sobota", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "off"}, "Amelia": {"type": "urlop", "hours": 8.0, "code": "U"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "12:00", "end": "20:00", "startMin": 720, "hours": 8.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "off"}, "Krystian": {"type": "urlop", "hours": 8.0, "code": "U"}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Michał": {"type": "off"}, "Olaf": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Viktorija", "close2": "Mateusz R.", "delivery": "Amadeusz", "social": "Olaf", "keys1": "Viktorija", "keys2": "Mateusz R."}}, {"dateISO": "2026-09-20", "day": 20, "weekday": "niedziela", "headcount": 0.0, "isNonTrading": true, "note": "NIEDZIELA NIEHANDLOWA", "shifts": {"Maciej": {"type": "off"}, "Amelia": {"type": "off"}, "Jakub": {"type": "off"}, "Viktorija": {"type": "off"}, "Karolina": {"type": "off"}, "Sebastian": {"type": "off"}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "off"}, "Olaf": {"type": "off"}, "Mateusz R.": {"type": "off"}, "Dawid D": {"type": "off"}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": null, "close2": null, "delivery": null, "social": null, "keys1": null, "keys2": null}}, {"dateISO": "2026-09-21", "day": 21, "weekday": "poniedziałek", "headcount": 11.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Maciej": {"type": "urlop", "hours": 8.0, "code": "U"}, "Amelia": {"type": "shift", "start": "12:00", "end": "20:00", "startMin": 720, "hours": 8.0}, "Jakub": {"type": "off"}, "Viktorija": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "14:30", "end": "20:00", "startMin": 870, "hours": 5.5}, "Krystian": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Michał": {"type": "urlop", "hours": 8.0, "code": "U"}, "Olaf": {"type": "off"}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "16:30", "startMin": 540, "hours": 7.5}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Amelia", "close2": "Mateusz C", "delivery": "Mateusz C", "social": "Mateusz C", "keys1": "Amelia", "keys2": "Mateusz C"}}, {"dateISO": "2026-09-22", "day": 22, "weekday": "wtorek", "headcount": 10.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "15:30", "startMin": 540, "hours": 6.5}, "Maciej": {"type": "urlop", "hours": 8.0, "code": "U"}, "Amelia": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Jakub": {"type": "off"}, "Viktorija": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Krystian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Mateusz Ch.": {"type": "shift", "start": "12:30", "end": "20:00", "startMin": 750, "hours": 7.5}, "Michał": {"type": "urlop", "hours": 8.0, "code": "U"}, "Olaf": {"type": "shift", "start": "09:00", "end": "19:00", "startMin": 540, "hours": 10.0}, "Mateusz R.": {"type": "off"}, "Dawid D": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}}, "tasks": {"close1": "Amelia", "close2": "Krystian", "delivery": "Amadeusz", "social": "Amelia", "keys1": "Amelia", "keys2": "Krystian"}}, {"dateISO": "2026-09-23", "day": 23, "weekday": "środa", "headcount": 11.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "urlop", "hours": 8.0, "code": "U"}, "Amelia": {"type": "off"}, "Jakub": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Viktorija": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Michał": {"type": "urlop", "hours": 8.0, "code": "U"}, "Olaf": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Dawid D": {"type": "szkolenie", "hours": 8.0, "code": "D"}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}}, "tasks": {"close1": "Jakub", "close2": "Olaf", "delivery": "Amadeusz", "social": "Jakub", "keys1": "Jakub", "keys2": "Olaf"}}, {"dateISO": "2026-09-24", "day": 24, "weekday": "czwartek", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "urlop", "hours": 8.0, "code": "U"}, "Amelia": {"type": "off"}, "Jakub": {"type": "off"}, "Viktorija": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "shift", "start": "15:00", "end": "20:00", "startMin": 900, "hours": 5.0}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Michał": {"type": "urlop", "hours": 8.0, "code": "U"}, "Olaf": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "19:00", "startMin": 540, "hours": 10.0}, "Dawid D": {"type": "szkolenie", "hours": 8.0, "code": "D"}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Viktorija", "close2": "Sebastian", "delivery": "Amadeusz", "social": "Viktorija", "keys1": "Viktorija", "keys2": "Sebastian"}}, {"dateISO": "2026-09-25", "day": 25, "weekday": "piątek", "headcount": 10.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Maciej": {"type": "urlop", "hours": 8.0, "code": "U"}, "Amelia": {"type": "off"}, "Jakub": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Viktorija": {"type": "off"}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Michał": {"type": "urlop", "hours": 8.0, "code": "U"}, "Olaf": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "16:00", "startMin": 540, "hours": 7.0}, "Dawid D": {"type": "urlop", "hours": 8.0, "code": "U"}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}}, "tasks": {"close1": "Jakub", "close2": "Viktorija", "delivery": "Amadeusz", "social": "Sebastian", "keys1": "Jakub", "keys2": "Viktorija"}}, {"dateISO": "2026-09-26", "day": 26, "weekday": "sobota", "headcount": 8.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "off"}, "Maciej": {"type": "urlop", "hours": 8.0, "code": "U"}, "Amelia": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Jakub": {"type": "off"}, "Viktorija": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "off"}, "Krystian": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "19:00", "startMin": 540, "hours": 10.0}, "Michał": {"type": "urlop", "hours": 8.0, "code": "U"}, "Olaf": {"type": "shift", "start": "14:00", "end": "20:00", "startMin": 840, "hours": 6.0}, "Mateusz R.": {"type": "shift", "start": "13:00", "end": "20:00", "startMin": 780, "hours": 7.0}, "Dawid D": {"type": "shift", "start": "09:00", "end": "16:00", "startMin": 540, "hours": 7.0}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Amelia", "close2": "Krystian", "delivery": "Krystian", "social": "Krystian", "keys1": "Amelia", "keys2": "Krystian"}}, {"dateISO": "2026-09-27", "day": 27, "weekday": "niedziela", "headcount": 0.0, "isNonTrading": true, "note": "NIEDZIELA NIEHANDLOWA", "shifts": {"Maciej": {"type": "off"}, "Amelia": {"type": "off"}, "Jakub": {"type": "off"}, "Viktorija": {"type": "off"}, "Karolina": {"type": "off"}, "Sebastian": {"type": "off"}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "off"}, "Michał": {"type": "off"}, "Olaf": {"type": "off"}, "Mateusz R.": {"type": "off"}, "Dawid D": {"type": "off"}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": null, "close2": null, "delivery": null, "social": null, "keys1": null, "keys2": null}}, {"dateISO": "2026-09-28", "day": 28, "weekday": "poniedziałek", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "urlop", "hours": 8.0, "code": "U"}, "Maciej": {"type": "off"}, "Amelia": {"type": "off"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "off"}, "Krystian": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Michał": {"type": "off"}, "Olaf": {"type": "shift", "start": "12:00", "end": "20:00", "startMin": 720, "hours": 8.0}, "Mateusz R.": {"type": "off"}, "Dawid D": {"type": "shift", "start": "06:30", "end": "16:00", "startMin": 390, "hours": 9.5}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Amelia", "close2": "Olaf", "delivery": "Amadeusz", "social": "Mateusz C", "keys1": "Amelia", "keys2": "Olaf"}}, {"dateISO": "2026-09-29", "day": 29, "weekday": "wtorek", "headcount": 10.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "urlop", "hours": 8.0, "code": "U"}, "Maciej": {"type": "off"}, "Amelia": {"type": "off"}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:30", "startMin": 540, "hours": 9.5}, "Viktorija": {"type": "shift", "start": "11:30", "end": "20:00", "startMin": 690, "hours": 8.5}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "11:30", "end": "20:00", "startMin": 690, "hours": 8.5}, "Krystian": {"type": "shift", "start": "09:00", "end": "17:00", "startMin": 540, "hours": 8.0}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Michał": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Olaf": {"type": "off"}, "Mateusz R.": {"type": "shift", "start": "09:00", "end": "16:00", "startMin": 540, "hours": 7.0}, "Dawid D": {"type": "shift", "start": "06:30", "end": "16:00", "startMin": 390, "hours": 9.5}, "Amadeusz": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}}, "tasks": {"close1": "Viktorija", "close2": "Sebastian", "delivery": "Amadeusz", "social": "Michał", "keys1": "Viktorija", "keys2": "Sebastian"}}, {"dateISO": "2026-09-30", "day": 30, "weekday": "środa", "headcount": 9.0, "isNonTrading": false, "note": null, "shifts": {"Dawid": {"type": "urlop", "hours": 8.0, "code": "U"}, "Maciej": {"type": "shift", "start": "09:00", "end": "13:00", "startMin": 540, "hours": 4.0}, "Amelia": {"type": "shift", "start": "09:00", "end": "19:00", "startMin": 540, "hours": 10.0}, "Jakub": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Viktorija": {"type": "shift", "start": "09:00", "end": "19:00", "startMin": 540, "hours": 10.0}, "Karolina": {"type": "l4", "hours": 8.0, "code": "L4"}, "Sebastian": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Krystian": {"type": "off"}, "Mateusz Ch.": {"type": "shift", "start": "09:00", "end": "18:00", "startMin": 540, "hours": 9.0}, "Michał": {"type": "shift", "start": "09:00", "end": "20:00", "startMin": 540, "hours": 11.0}, "Olaf": {"type": "off"}, "Mateusz R.": {"type": "shift", "start": "13:30", "end": "20:00", "startMin": 810, "hours": 6.5}, "Dawid D": {"type": "urlop", "hours": 8.0, "code": "U"}, "Amadeusz": {"type": "off"}}, "tasks": {"close1": "Jakub", "close2": "Maciej", "delivery": "Amadeusz", "social": "Olaf", "keys1": "Jakub", "keys2": "Maciej"}}], "sourceSheetName": "Grafik Pracy - Wrzesień 2026"}</script>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="brand-row">
+      <div class="brand"><span class="dot"></span> Grafik pracy</div>
+      <button class="theme-toggle" id="themeToggle" title="Zmień motyw">🌙</button>
+    </div>
+    <div class="month-row">
+      <div class="month-nav">
+        <button class="month-btn" id="prevMonth">‹</button>
+        <div class="month-label" id="monthLabel">—</div>
+        <button class="month-btn" id="nextMonth">›</button>
+      </div>
+      <button class="who-btn" id="whoBtn">
+        <span class="who-avatar" id="whoAvatar">?</span>
+        <span id="whoLabel">Wybierz siebie</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main"></main>
+
+  <nav class="bottombar">
+    <div class="bottombar-inner">
+      <button class="navbtn active" data-tab="mine"><span class="ic">🗓️</span>Mój grafik</button>
+      <button class="navbtn" data-tab="day"><span class="ic">👥</span>Kto pracuje</button>
+      <button class="navbtn" data-tab="salary"><span class="ic">💰</span>Pensja</button>
+      <button class="navbtn" data-tab="options"><span class="ic">⚙️</span>Opcje</button>
+      <button class="navbtn" data-tab="load"><span class="ic">📤</span>Wczytaj</button>
+    </div>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<input type="file" id="fileInput" accept=".xlsx,.xls">
+
+<script>
+/* ============================ STORAGE HELPERS ============================
+   Primary storage is window.storage (available when running as a Claude
+   artifact). When that's not available — e.g. hosted standalone on GitHub
+   Pages — everything transparently falls back to localStorage under ONE
+   well-defined key, so the exact same app code works in both places with
+   zero changes anywhere else. No "Save" button needed: every existing
+   storeSet() call already fires immediately after each user action, so an
+   edit is written to disk the instant it happens.
+
+   Local fallback shape (all under localStorage["workSchedule_localData"]):
+     {
+       "grafik:index": [...],            // list of loaded months
+       "grafik:month:2026-09": {...},    // ORIGINAL schedule imported from the
+                                          // xlsx for that month — untouched by edits
+       "grafik:overrides": {...},        // USER's manual edits (nadgodziny, L4,
+                                          // zmiana grafiku...), layered on top of
+                                          // the original at render time via getShift()
+       "grafik:roles": {...},
+       "grafik:salary": {...},
+       "grafik:my-name": "...",
+       "grafik:theme": "..."
+     }
+   Original file data and user edits stay in separate keys exactly as before —
+   nothing here merges or overwrites the imported schedule. */
+const LOCAL_STORAGE_KEY = 'workSchedule_localData';
+const memFallback = {};
+
+function readLocalStore(){
+  try{
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if(!raw) return {};
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+  } catch(e){
+    // Corrupted / unreadable data — never crash the app, just start fresh.
+    console.warn('workSchedule_localData was unreadable, starting fresh:', e);
+    return {};
+  }
+}
+function writeLocalStore(store){
+  try{ localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(store)); }
+  catch(e){ console.warn('Could not write to localStorage (storage full or disabled):', e); }
+}
+
+async function storeGet(key, shared){
+  try{
+    const r = await window.storage.get(key, !!shared);
+    return r ? r.value : null;
+  } catch(e){
+    const store = readLocalStore();
+    return (key in store) ? store[key] : (memFallback[key] ?? null);
+  }
+}
+async function storeSet(key, value, shared){
+  try{
+    await window.storage.set(key, value, !!shared);
+  } catch(e){
+    const store = readLocalStore();
+    store[key] = value;
+    writeLocalStore(store);
+    memFallback[key] = value;
+  }
+}
+async function storeDelete(key, shared){
+  try{
+    await window.storage.delete(key, !!shared);
+  } catch(e){
+    const store = readLocalStore();
+    delete store[key];
+    writeLocalStore(store);
+    delete memFallback[key];
+  }
+}
+async function storeList(prefix, shared){
+  try{
+    const r = await window.storage.list(prefix, !!shared);
+    return r ? r.keys : [];
+  } catch(e){
+    const store = readLocalStore();
+    const p = prefix || '';
+    return Object.keys(store).filter(k => k.startsWith(p));
+  }
+}
+
+/* ============================ CONSTANTS ============================ */
+const MONTHS_PL = ['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+const WD_SHORT = {'poniedziałek':'Pon','wtorek':'Wt','środa':'Śr','czwartek':'Czw','piątek':'Pt','sobota':'Sob','niedziela':'Ndz'};
+
+/* ============================ ROLE / CATEGORY SYSTEM ============================
+   Role assignment per employee is persisted (shared) so it survives across
+   months and can be edited from the "Opcje" tab. "manager" is fixed and can
+   never be reassigned through the UI. Any employee not yet known gets
+   "unassigned" the first time their name appears in an uploaded file, and
+   shows up flagged in Opcje until someone picks a real role for them. */
+const ROLE_DEFS = {
+  manager:    { label:'Kierownicy',          color:'#3D4B63', order:0,   editable:false },
+  pok:        { label:'POK',                 color:'#2F6F6B', order:1,   editable:true  },
+  multi:      { label:'POK AGD IT/RTV',      colors:['#2F6F6B','#A6763A','#4C7EA8'], order:1.5, editable:true },
+  agd:        { label:'AGD',                 color:'#A6763A', order:2,   editable:true  },
+  agditrtv:   { label:'AGD/IT/RTV',          colors:['#A6763A','#4C7EA8'], order:2.5, editable:true },
+  itrtv:      { label:'IT/RTV',              color:'#4C7EA8', order:3,   editable:true  },
+  support:    { label:'Wsparcie techniczne', color:'#6D5D8A', order:4,   editable:true  },
+  unassigned: { label:'Nieprzypisany',       color:'#9AA0AC', order:50,  editable:true  },
+};
+const EDITABLE_ROLES = Object.keys(ROLE_DEFS).filter(id => ROLE_DEFS[id].editable);
+
+/* Seed — matches the roster as of Wrzesień 2026. Only used the first time an
+   employee name is seen; after that their role lives in persisted storage. */
+const DEFAULT_ROLE_ASSIGNMENTS = {
+  'Dawid':'manager', 'Maciej':'manager',
+  'Amelia':'pok', 'Jakub':'pok', 'Viktorija':'pok',
+  'Karolina':'agd', 'Sebastian':'agd', 'Krystian':'agd',
+  'Mateusz Ch.':'itrtv', 'Michał':'itrtv', 'Olaf':'itrtv', 'Dawid D':'itrtv',
+  'Amadeusz':'support',
+  'Mateusz R.':'multi',
+};
+
+function roleIdFor(name){
+  return (state.roleAssignments && state.roleAssignments[name])
+    || DEFAULT_ROLE_ASSIGNMENTS[name]
+    || 'unassigned';
+}
+function getCategory(name){
+  const def = ROLE_DEFS[roleIdFor(name)] || ROLE_DEFS.unassigned;
+  return { id: roleIdFor(name), label: def.label, color: def.color, colors: def.colors };
+}
+function categoryColorCSS(cat){
+  if(cat.colors && cat.colors.length){
+    const n = cat.colors.length;
+    const stops = cat.colors.map((c,i)=> `${c} ${Math.round(i/n*100)}% ${Math.round((i+1)/n*100)}%`).join(', ');
+    return `linear-gradient(to bottom, ${stops})`;
+  }
+  return cat.color;
+}
+function categoryColorCSSHoriz(cat){
+  if(cat.colors && cat.colors.length){
+    const n = cat.colors.length;
+    const stops = cat.colors.map((c,i)=> `${c} ${Math.round(i/n*100)}% ${Math.round((i+1)/n*100)}%`).join(', ');
+    return `linear-gradient(to right, ${stops})`;
+  }
+  return cat.color;
+}
+function categoryOrderIndex(name){
+  const def = ROLE_DEFS[roleIdFor(name)] || ROLE_DEFS.unassigned;
+  return def.order;
+}
+function byCategoryThenTime(a, b){
+  // a, b are [name, shift] pairs
+  const ci = categoryOrderIndex(a[0]) - categoryOrderIndex(b[0]);
+  if(ci !== 0) return ci;
+  return (a[1].startMin||0) - (b[1].startMin||0);
+}
+
+async function loadRoleAssignments(){
+  const raw = await storeGet('grafik:roles', true);
+  state.roleAssignments = raw ? JSON.parse(raw) : {};
+}
+async function saveRoleAssignments(){
+  await storeSet('grafik:roles', JSON.stringify(state.roleAssignments), true);
+}
+async function setRole(name, roleId){
+  state.roleAssignments[name] = roleId;
+  await saveRoleAssignments();
+}
+async function ensureRolesForEmployees(employees){
+  let changed = false;
+  employees.forEach(name=>{
+    if(!state.roleAssignments[name] && !DEFAULT_ROLE_ASSIGNMENTS[name]){
+      state.roleAssignments[name] = 'unassigned';
+      changed = true;
+    }
+  });
+  if(changed) await saveRoleAssignments();
+}
+
+/* ============================ APP STATE ============================ */
+let state = {
+  monthsIndex: [],        // list of month keys e.g. "2026-09", sorted
+  monthsCache: {},        // key -> parsed month data
+  currentMonthKey: null,
+  myName: null,
+  selectedDay: null,      // ISO date string for "Kto pracuje" tab
+  activeTab: 'mine',
+  roleAssignments: {},    // name -> role id, persisted, editable via Opcje
+  overrides: {},          // "name|dateISO" -> manual day override, persisted
+  salary: null,           // Pensja tab inputs, persisted personally
+};
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function dateKey(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function monthKeyOf(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`; }
+function initials(name){
+  if(!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+}
+function fmtHours(h){
+  if(h==null || isNaN(h)) return '';
+  const whole = Math.floor(h);
+  const min = Math.round((h-whole)*60);
+  return min===0 ? `${whole} godz.` : `${whole} godz. ${min} min`;
+}
+function fmtSignedHours(h){
+  if(!h) return '0h';
+  const sign = h<0 ? '-' : '+';
+  const abs = Math.abs(h);
+  const whole = Math.floor(abs);
+  const min = Math.round((abs-whole)*60);
+  return min===0 ? `${sign}${whole}h` : `${sign}${whole}h ${min}min`;
+}
+
+/* ============================ MANUAL DAY OVERRIDES ============================
+   Lets a person mark L4, delete a working day, change shift times, or log
+   overtime — on top of whatever the uploaded file says. Stored as one shared
+   blob keyed by "name|dateISO" so edits are visible to everyone using the app
+   (e.g. a coworker's L4 shows up for others too). */
+function overrideKey(name, dateISO){ return `${name}|${dateISO}`; }
+
+function getShift(day, name){
+  const base = day.shifts[name] || {type:'off'};
+  const ov = state.overrides[overrideKey(name, day.dateISO)];
+  if(!ov){
+    return { ...base, overtimeHours:0, timeChangeReason:null, edited:false };
+  }
+  let eff = { ...base };
+  let overtimeHours = 0;
+  if(ov.status){
+    eff.type = ov.status;
+    if(ov.status === 'shift'){
+      const start = ov.start || base.start || '09:00';
+      const end = ov.end || base.end || '17:00';
+      const [sh,sm] = start.split(':').map(Number);
+      const [eh,em] = end.split(':').map(Number);
+      eff.start = start; eff.end = end;
+      eff.startMin = sh*60+sm;
+      const newHours = Math.max(((eh*60+em) - (sh*60+sm))/60, 0);
+      eff.hours = newHours;
+      // Nadgodziny = różnica między nowymi a oryginalnymi (z pliku) godzinami tego dnia.
+      // Skrócenie zmiany (np. odbiór nadgodzin) daje ujemną wartość automatycznie.
+      const originalHours = (base.type === 'shift' && base.hours) ? base.hours : 0;
+      overtimeHours = newHours - originalHours;
+    } else {
+      delete eff.start; delete eff.end; delete eff.startMin; eff.hours = null; eff.code = null;
+    }
+  }
+  eff.overtimeHours = Math.round(overtimeHours * 100) / 100;
+  eff.timeChangeReason = (ov.status==='shift') ? (ov.timeChangeReason || null) : null;
+  eff.edited = true;
+  return eff;
+}
+function getEffectiveShifts(data, day){
+  const map = {};
+  data.employees.forEach(n => { map[n] = getShift(day, n); });
+  return map;
+}
+async function loadOverrides(){
+  const raw = await storeGet('grafik:overrides', true);
+  state.overrides = raw ? JSON.parse(raw) : {};
+}
+async function saveOverrideFor(name, dateISO, override){
+  if(override === null){
+    delete state.overrides[overrideKey(name, dateISO)];
+  } else {
+    state.overrides[overrideKey(name, dateISO)] = override;
+  }
+  await storeSet('grafik:overrides', JSON.stringify(state.overrides), true);
+}
+async function restoreDefaults(){
+  if(!state.myName) return;
+  showConfirmModal('Przywrócić domyślne? Wszystkie Twoje ręczne zmiany (nadgodziny, L4, zmiany godzin) zostaną usunięte.', doRestoreDefaults);
+}
+async function doRestoreDefaults(){
+  const prefix = state.myName + '|';
+  Object.keys(state.overrides).forEach(k => { if(k.startsWith(prefix)) delete state.overrides[k]; });
+  await storeSet('grafik:overrides', JSON.stringify(state.overrides), true);
+  showToast('Przywrócono domyślne');
+  renderAll();
+}
+window.restoreDefaults = restoreDefaults;
+
+/* Shared summary calc used by both "Mój grafik" and "Pensja" */
+function computeMonthlySummary(data, name){
+  let workDays=0, urlopDays=0, szkolenieDays=0, l4Days=0, totalHours=0, overtimeHours=0;
+  data.days.forEach(day=>{
+    const s = getShift(day, name);
+    // "Zmiana grafiku" to zwykła korekta godzin — NIE liczy się jako nadgodziny.
+    if(s.overtimeHours && s.timeChangeReason!=='manual'){
+      overtimeHours += s.overtimeHours;
+    }
+    if(day.isNonTrading) return;
+    if(s.type==='shift'){ workDays++; if(s.hours) totalHours+=s.hours; }
+    else if(s.type==='urlop') urlopDays++;
+    else if(s.type==='szkolenie'){ szkolenieDays++; if(s.hours) totalHours+=s.hours; }
+    else if(s.type==='l4') l4Days++;
+  });
+  return { workDays, urlopDays, szkolenieDays, l4Days, totalHours, overtimeHours: Math.round(overtimeHours*100)/100 };
+}
+
+/* Godziny wg ORYGINALNEGO pliku (bez ręcznych edycji) — to jest stały mianownik
+   do stawki godzinowej, żeby edycja dnia nie zmieniała wstecznie stawki. */
+function computeOriginalScheduleHours(data, name){
+  let total = 0;
+  data.days.forEach(day=>{
+    const base = day.shifts[name];
+    if(base && (base.type==='shift' || base.type==='szkolenie') && base.hours) total += base.hours;
+  });
+  return total;
+}
+
+/* Rozdziela ręczne zmiany godzin na dwie odrębne pule wg wybranego powodu:
+   - "Odbiór nadgodzin" -> pula nadgodzin płatna 150% (może być ujemna — to odbiór)
+   - "Zmiana grafiku"   -> zwykła korekta godzin płatna 100% stawki */
+function computePayAdjustments(data, name){
+  let overtimePoolHours = 0, regularAdjustHours = 0;
+  data.days.forEach(day=>{
+    const ov = state.overrides[overrideKey(name, day.dateISO)];
+    if(!ov || ov.status !== 'shift') return;
+    const eff = getShift(day, name);
+    const delta = eff.overtimeHours || 0;
+    // "Nadgodziny" (zrobione) i "Odbiór nadgodzin" (odebrane) trafiają do tej samej
+    // puli płatnej 150% — wynik to (zrobione - odebrane). "Zmiana grafiku" to zwykła
+    // korekta godzin płatna 100% stawki.
+    if(ov.timeChangeReason === 'overtime' || ov.timeChangeReason === 'overtime_pickup') overtimePoolHours += delta;
+    else regularAdjustHours += delta;
+  });
+  return {
+    overtimePoolHours: Math.round(overtimePoolHours*100)/100,
+    regularAdjustHours: Math.round(regularAdjustHours*100)/100
+  };
+}
+
+const STANDARD_DAY_HOURS = 8;
+/* Wynagrodzenie za urlop i L4 wg uproszczonych zasad Kodeksu pracy:
+   urlop płatny 100% stawki, L4 płatne 80% (średnia stawka, uproszczenie). */
+function computeAbsencePay(data, name, stawka){
+  let urlopHours = 0, l4Hours = 0;
+  data.days.forEach(day=>{
+    const eff = getShift(day, name);
+    const base = day.shifts[name];
+    if(eff.type === 'urlop'){
+      urlopHours += (eff.hours!=null ? eff.hours : (base && base.hours)) || STANDARD_DAY_HOURS;
+    } else if(eff.type === 'l4'){
+      l4Hours += (eff.hours!=null ? eff.hours : (base && base.hours)) || STANDARD_DAY_HOURS;
+    }
+  });
+  return {
+    urlopHours, l4Hours,
+    urlopBrutto: stawka * urlopHours,
+    l4Brutto: stawka * l4Hours * 0.8,
+  };
+}
+
+/* ============================ PARSING ============================ */
+function normalizeName(n){
+  return (n||'').toString().trim().toLowerCase().replace(/\./g,'').replace(/\s+/g,' ');
+}
+
+function parseTasksSheet(wb, nameMap){
+  const ws = wb.Sheets['Zadania'];
+  if(!ws) return {};
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+  const headerIdx = rows.findIndex(r => r && typeof r[0] === 'string' && r[0].toUpperCase().trim() === 'DATA');
+  if(headerIdx === -1) return {};
+  const header = rows[headerIdx].map(h => (h||'').toString().trim().toLowerCase());
+  const col = label => header.indexOf(label);
+  const iClose1 = col('zamknięcie 1'), iClose2 = col('zamknięcie 2');
+  const iDelivery = col('dostawa'), iSocial = col('socjal');
+  const iKeys1 = col('klucze 1'), iKeys2 = col('klucze 2');
+
+  const resolve = v => {
+    if(v == null) return null;
+    if(typeof v === 'string' && v.toUpperCase().includes('NIEHANDLOW')) return null;
+    const norm = normalizeName(v);
+    return nameMap[norm] || v.toString().trim();
+  };
+
+  const tasksByDate = {};
+  for(let r = headerIdx+1; r<rows.length; r++){
+    const row = rows[r];
+    if(!row || !(row[0] instanceof Date)) break;
+    tasksByDate[dateKey(row[0])] = {
+      close1: iClose1>-1 ? resolve(row[iClose1]) : null,
+      close2: iClose2>-1 ? resolve(row[iClose2]) : null,
+      delivery: iDelivery>-1 ? resolve(row[iDelivery]) : null,
+      social: iSocial>-1 ? resolve(row[iSocial]) : null,
+      keys1: iKeys1>-1 ? resolve(row[iKeys1]) : null,
+      keys2: iKeys2>-1 ? resolve(row[iKeys2]) : null,
+    };
+  }
+  return tasksByDate;
+}
+
+function getPersonTasks(day, name){
+  if(!day.tasks) return [];
+  const t = day.tasks;
+  const tags = [];
+  if(t.close1===name || t.close2===name) tags.push({type:'close', label:'Zamknięcie'});
+  if(t.keys1===name || t.keys2===name) tags.push({type:'keys', label:'Klucze'});
+  if(t.delivery===name) tags.push({type:'delivery', label:'Dostawa'});
+  if(t.social===name) tags.push({type:'social', label:'Social'});
+  return tags;
+}
+
+function parseWorkbookArrayBuffer(buf){
+  const wb = XLSX.read(buf, {type:'array', cellDates:true});
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+
+  const headerRowIdx = rows.findIndex(r => r && r[0] === 'Dzień');
+  if(headerRowIdx === -1 || headerRowIdx === 0){
+    throw new Error('Nie rozpoznano formatu pliku (brak wiersza nagłówka "Dzień"). Upewnij się, że eksportujesz arkusz w tym samym układzie co dotychczas.');
+  }
+  const namesRow = rows[headerRowIdx-1] || [];
+  const headerRow = rows[headerRowIdx] || [];
+
+  const empStarts = [];
+  for(let i=0;i<headerRow.length;i++){
+    if(headerRow[i] === 'od') empStarts.push(i);
+  }
+  if(empStarts.length === 0){
+    throw new Error('Nie znaleziono żadnych kolumn pracowników ("od / do / razem") w pliku.');
+  }
+  const employees = empStarts.map(i => (namesRow[i] || '').toString().trim()).map((n,idx)=> n || `Osoba ${idx+1}`);
+
+  const nameMap = {};
+  employees.forEach(e => { nameMap[normalizeName(e)] = e; });
+  const tasksByDate = parseTasksSheet(wb, nameMap);
+
+  const days = [];
+  for(let r = headerRowIdx+1; r<rows.length; r++){
+    const row = rows[r];
+    if(!row || !(row[0] instanceof Date)) break;
+    const dateObj = row[0];
+    const weekday = (row[1] || '').toString().trim();
+    const headcount = typeof row[3] === 'number' ? row[3] : null;
+    let isNonTrading = false, note = null;
+    const shifts = {};
+
+    empStarts.forEach((colStart, idx) => {
+      const name = employees[idx];
+      const od = row[colStart];
+      const doo = row[colStart+1];
+      const razem = row[colStart+2];
+
+      if(typeof od === 'string' && od.toUpperCase().includes('NIEHANDLOW')){
+        isNonTrading = true; note = od; return;
+      }
+      if(od == null){ shifts[name] = {type:'off'}; return; }
+
+      if(typeof od === 'string'){
+        const code = od.toUpperCase().trim();
+        let hours = (razem instanceof Date) ? (razem.getHours() + razem.getMinutes()/60) : (typeof razem === 'number' ? razem*24 : null);
+        let type = 'inne';
+        if(code === 'U') type = 'urlop';
+        else if(code === 'D') type = 'szkolenie';
+        else if(code === 'L4') type = 'l4';
+        shifts[name] = {type, hours, code};
+        return;
+      }
+      if(od instanceof Date && doo instanceof Date){
+        const hours = (razem instanceof Date) ? (razem.getHours() + razem.getMinutes()/60) : null;
+        shifts[name] = {
+          type:'shift',
+          start: `${pad2(od.getHours())}:${pad2(od.getMinutes())}`,
+          end: `${pad2(doo.getHours())}:${pad2(doo.getMinutes())}`,
+          startMin: od.getHours()*60+od.getMinutes(),
+          hours
+        };
+        return;
+      }
+      shifts[name] = {type:'off'};
+    });
+
+    const dISO = dateKey(dateObj);
+    days.push({
+      dateISO: dISO,
+      day: dateObj.getDate(),
+      weekday,
+      headcount,
+      isNonTrading,
+      note,
+      shifts,
+      tasks: tasksByDate[dISO] || null
+    });
+  }
+
+  if(days.length === 0){
+    throw new Error('Nie znaleziono żadnych dni w pliku — sprawdź, czy arkusz ma taki sam układ jak poprzednio.');
+  }
+  const first = new Date(days[0].dateISO);
+  const monthKey = monthKeyOf(first);
+  const label = `${MONTHS_PL[first.getMonth()]} ${first.getFullYear()}`;
+
+  return { monthKey, label, employees, days, sourceSheetName: sheetName };
+}
+
+/* ============================ PERSISTENCE ============================ */
+async function loadIndex(){
+  const raw = await storeGet('grafik:index', true);
+  state.monthsIndex = raw ? JSON.parse(raw) : [];
+}
+async function saveIndex(){
+  await storeSet('grafik:index', JSON.stringify(state.monthsIndex), true);
+}
+async function loadMonth(key){
+  if(state.monthsCache[key]) return state.monthsCache[key];
+  const raw = await storeGet('grafik:month:'+key, true);
+  if(!raw) return null;
+  const data = JSON.parse(raw);
+  state.monthsCache[key] = data;
+  return data;
+}
+async function saveMonth(data){
+  state.monthsCache[data.monthKey] = data;
+  await storeSet('grafik:month:'+data.monthKey, JSON.stringify(data), true);
+  if(!state.monthsIndex.includes(data.monthKey)){
+    state.monthsIndex.push(data.monthKey);
+    state.monthsIndex.sort();
+    await saveIndex();
+  }
+}
+async function deleteMonth(key){
+  await storeDelete('grafik:month:'+key, true);
+  delete state.monthsCache[key];
+  state.monthsIndex = state.monthsIndex.filter(k=>k!==key);
+  await saveIndex();
+}
+async function loadMyName(){
+  state.myName = await storeGet('grafik:my-name', false);
+}
+async function saveMyName(name){
+  state.myName = name;
+  await storeSet('grafik:my-name', name, false);
+}
+
+/* ============================ TOAST ============================ */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ============================ RENDER: TOP BAR ============================ */
+function renderTopBar(){
+  const cur = state.currentMonthKey;
+  const idx = state.monthsIndex.indexOf(cur);
+  document.getElementById('prevMonth').disabled = idx <= 0;
+  document.getElementById('nextMonth').disabled = idx === -1 || idx >= state.monthsIndex.length-1;
+
+  const data = cur ? state.monthsCache[cur] : null;
+  document.getElementById('monthLabel').textContent = data ? data.label : (state.monthsIndex.length ? '—' : 'Brak danych');
+
+  document.getElementById('whoAvatar').textContent = initials(state.myName);
+  document.getElementById('whoLabel').textContent = state.myName || 'Wybierz siebie';
+}
+
+/* ============================ RENDER: MOJ GRAFIK ============================ */
+function renderMine(){
+  const main = document.getElementById('main');
+  const data = state.currentMonthKey ? state.monthsCache[state.currentMonthKey] : null;
+
+  if(!state.monthsIndex.length){
+    main.innerHTML = emptyStateHTML('📭','Brak wczytanego grafiku','Przejdź do zakładki „Wczytaj”, aby dodać plik z aktualnym grafikiem.');
+    return;
+  }
+  if(!state.myName){
+    main.innerHTML = emptyStateHTML('👋','Kim jesteś?','Wybierz swoje imię, aby zobaczyć swój grafik.', 'Wybierz siebie', 'openWhoModal()');
+    return;
+  }
+  if(!data){ main.innerHTML=''; return; }
+
+  const todayISO = dateKey(new Date());
+  const sum = computeMonthlySummary(data, state.myName);
+
+  // Only list days where you're actually present (working shift or training),
+  // or an otherwise-quiet day where overtime was logged — Wolne / Urlop / L4
+  // with no overtime stay hidden from the list on purpose.
+  const rows = data.days
+    .map(day => ({day, s: getShift(day, state.myName)}))
+    .filter(({day,s}) => !day.isNonTrading && (s.type==='shift' || s.type==='szkolenie' || s.overtimeHours!==0));
+
+  let html = `<div class="summary summary5">
+    <div class="cell"><div class="num">${sum.workDays}</div><div class="lab">dni pracy</div></div>
+    <div class="cell"><div class="num">${Math.round(sum.totalHours)}</div><div class="lab">godzin</div></div>
+    <div class="cell"><div class="num">${sum.urlopDays}</div><div class="lab">urlop</div></div>
+    <div class="cell"><div class="num">${sum.szkolenieDays}</div><div class="lab">szkolenie</div></div>
+    <div class="cell"><div class="num">${sum.overtimeHours>0?'+':''}${sum.overtimeHours}</div><div class="lab">nadgodziny</div></div>
+  </div>`;
+
+  html = buildMonthCalendar(data) + html;
+
+  const hasAnyOverride = Object.keys(state.overrides).some(k=> k.startsWith(state.myName+'|'));
+  if(hasAnyOverride){
+    html += `<button class="ghost-btn" onclick="restoreDefaults()">↺ Przywróć domyślne</button>`;
+  }
+
+  if(sum.l4Days>0){
+    html += `<div class="hint" style="margin:-8px 0 14px;">L4 w tym miesiącu: ${sum.l4Days} dni.</div>`;
+  }
+
+  if(rows.length===0){
+    html += `<div class="nontrading-card">Brak dni pracy do pokazania w tym miesiącu.</div>`;
+  }
+
+  rows.forEach(({day,s})=>{
+    const isToday = day.dateISO === todayISO;
+    const wd = WD_SHORT[day.weekday] || (day.weekday||'').slice(0,3);
+    let barClass, body;
+    if(s.type==='shift'){
+      barClass='shift';
+      body = `<div class="top-row"><span class="time">${s.start}–${s.end}</span></div>` + (s.hours?`<div class="hours">${fmtHours(s.hours)}</div>`:'');
+    } else if(s.type==='szkolenie'){
+      barClass='szkolenie';
+      body = `<span class="badge szkolenie">Szkolenie</span>` + (s.hours?`<div class="sub">${fmtHours(s.hours)}</div>`:'');
+    } else {
+      const labels = {off:'Wolne', urlop:'Urlop', l4:'L4'};
+      barClass='off';
+      body = `<span class="badge off">${labels[s.type]||'Wolne'}</span>`;
+    }
+    if(s.overtimeHours!==0 && s.timeChangeReason!=='manual'){
+      body += `<div class="sub overtime-sub">${fmtSignedHours(s.overtimeHours)} nadgodzin${s.timeChangeReason==='overtime_pickup'?' (odbiór)':''}</div>`;
+    }
+    html += `<div class="ticket ${isToday?'today':''}" data-date="${day.dateISO}">
+      <div class="bar ${barClass}"></div>
+      <div class="date-block"><div class="dnum">${day.day}</div><div class="dwk">${wd}</div></div>
+      <div class="info" onclick="goToDay('${day.dateISO}')">${body}</div>
+      <button class="edit-btn" onclick="event.stopPropagation(); openDayEditModal('${day.dateISO}')" title="Edytuj dzień">${s.edited?'✎':'✏️'}</button>
+    </div>`;
+  });
+
+  main.innerHTML = html;
+}
+
+function emptyStateHTML(icon,title,text,btnLabel,onclick){
+  return `<div class="empty-state">
+    <div class="icon">${icon}</div>
+    <h2>${title}</h2>
+    <p>${text}</p>
+    ${btnLabel ? `<button class="btn-primary" onclick="${onclick}">${btnLabel}</button>` : ''}
+  </div>`;
+}
+
+/* ============================ MONTH CALENDAR (Mój grafik) ============================ */
+function shortTime(t){
+  const [h,m] = t.split(':');
+  return m==='00' ? String(parseInt(h,10)) : `${parseInt(h,10)}:${m}`;
+}
+function buildMonthCalendar(data){
+  const dowLabels = ['Pon','Wt','Śr','Czw','Pt','Sob','Ndz'];
+  const todayISO = dateKey(new Date());
+  const firstDay = new Date(data.days[0].dateISO+'T00:00:00');
+  const firstOffset = (firstDay.getDay()+6)%7;
+
+  let cells = '';
+  for(let i=0;i<firstOffset;i++) cells += `<div class="cal-cell empty"></div>`;
+
+  data.days.forEach(day=>{
+    const s = getShift(day, state.myName);
+    let cls='off', label='';
+    if(day.isNonTrading){ cls='nontrading'; }
+    else if(s.type==='shift'){ cls='shift'; label = `${shortTime(s.start)}-${shortTime(s.end)}`; }
+    else if(s.type==='szkolenie'){ cls='szkolenie'; label='Szk'; }
+    else if(s.type==='urlop'){ cls='urlop'; label='Url'; }
+    else if(s.type==='l4'){ cls='l4'; label='L4'; }
+    if(s.overtimeHours>0 && cls==='off') { label = `+${s.overtimeHours}g`; }
+    const isToday = day.dateISO === todayISO;
+    cells += `<div class="cal-cell ${cls} ${isToday?'today':''} ${s.edited?'is-edited':''}" onclick="openDayEditModal('${day.dateISO}')">
+      <div class="cd">${day.day}</div>${label?`<div class="ct">${label}</div>`:''}
+    </div>`;
+  });
+
+  const dow = dowLabels.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  return `<div class="month-cal-wrap"><div class="month-cal">${dow}${cells}</div></div>`;
+}
+
+/* ============================ GANTT CHART (Kto pracuje) — osoby na Y, czas na X ============================ */
+function buildDayChart(list){
+  // list: array of [name, shift], shift.type === 'shift' — already sorted by category then time
+  const parsed = list.map(([name,s])=>{
+    const [eh,em] = s.end.split(':').map(Number);
+    return {name, s, startMin: s.startMin, endMin: eh*60+em, cat: getCategory(name)};
+  });
+  const minMin = Math.min(...parsed.map(p=>p.startMin));
+  const maxMin = Math.max(...parsed.map(p=>p.endMin));
+  const minHour = Math.floor(minMin/60);
+  const maxHour = Math.ceil(maxMin/60);
+  const spanMin = Math.max((maxHour-minHour)*60, 60);
+  const pctPerMin = 100 / spanMin;
+
+  const rangeHours = maxHour - minHour;
+  const step = rangeHours <= 6 ? 1 : rangeHours <= 10 ? 2 : 3;
+
+  let axis = '', gridLines = '';
+  for(let h=minHour; h<=maxHour; h += step){
+    const left = (h-minHour)*60*pctPerMin;
+    axis += `<div class="hr" style="left:${left}%">${pad2(h)}:00</div>`;
+    gridLines += `<div class="gantt-gridline" style="left:${left}%"></div>`;
+  }
+
+  let rowsHtml = '';
+  let lastCat = null;
+  parsed.forEach(p=>{
+    if(p.cat.label !== lastCat){
+      rowsHtml += `<div class="gantt-cat-label">${p.cat.label}</div>`;
+      lastCat = p.cat.label;
+    }
+    const left = (p.startMin-minHour*60)*pctPerMin;
+    const width = Math.max((p.endMin-p.startMin)*pctPerMin, 6);
+    const isMe = p.name === state.myName;
+    rowsHtml += `<div class="gantt-row">
+      <div class="gantt-name ${isMe?'me':''}">${p.name}${isMe?' •':''}</div>
+      <div class="gantt-track">
+        ${gridLines}
+        <div class="gantt-bar ${isMe?'me':''}" style="left:${left}%; width:${width}%; background:${categoryColorCSSHoriz(p.cat)};" title="${p.name}: ${p.s.start}–${p.s.end}">
+          <span class="gantt-bar-label">${p.s.start}–${p.s.end}</span>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  const seenIds = new Set();
+  const legend = parsed.filter(p => { if(seenIds.has(p.cat.id)) return false; seenIds.add(p.cat.id); return true; })
+    .map(p => `<div class="legend-item"><span class="legend-dot" style="background:${categoryColorCSSHoriz(p.cat)}"></span>${p.cat.label}</div>`)
+    .join('');
+
+  return `<div class="gantt-card">
+    <div class="gantt-axis">${axis}</div>
+    ${rowsHtml}
+    <div class="gantt-legend">${legend}</div>
+  </div>`;
+}
+
+/* ============================ RENDER: KTO PRACUJE (DAY VIEW) ============================ */
+function goToDay(iso){
+  state.selectedDay = iso;
+  setTab('day');
+}
+
+function renderDay(){
+  const main = document.getElementById('main');
+  const data = state.currentMonthKey ? state.monthsCache[state.currentMonthKey] : null;
+  if(!data){
+    main.innerHTML = emptyStateHTML('📭','Brak wczytanego grafiku','Przejdź do zakładki „Wczytaj”, aby dodać plik z aktualnym grafikiem.');
+    return;
+  }
+  if(!state.selectedDay || !data.days.find(d=>d.dateISO===state.selectedDay)){
+    const todayISO = dateKey(new Date());
+    const found = data.days.find(d=>d.dateISO===todayISO);
+    state.selectedDay = found ? todayISO : data.days[0].dateISO;
+  }
+
+  let strip = `<div class="day-strip" id="dayStrip">`;
+  data.days.forEach(day=>{
+    const wd = WD_SHORT[day.weekday] || (day.weekday||'').slice(0,3);
+    const myShift = state.myName ? getShift(day, state.myName) : null;
+    const mine = myShift && myShift.type === 'shift';
+    const sel = day.dateISO === state.selectedDay;
+    strip += `<div class="day-chip ${sel?'selected':''} ${mine?'mine':''} ${day.isNonTrading?'nontrading':''}" data-date="${day.dateISO}" onclick="selectDay('${day.dateISO}')">
+      <div class="n">${day.day}</div><div class="w">${wd}</div>
+    </div>`;
+  });
+  strip += `</div>`;
+
+  const day = data.days.find(d=>d.dateISO===state.selectedDay);
+  const effShifts = getEffectiveShifts(data, day);
+  let body='';
+  if(day.isNonTrading){
+    body = `<div class="nontrading-card">🚫<br><br>${day.note || 'Niedziela niehandlowa'}</div>`;
+  } else {
+    // Kto pracuje: tylko osoby na zmianie. Urlop i L4 są tu całkowicie pominięte
+    // (nie pokazujemy ich ani na wykresie, ani na liście). Szkolenie/delegacja
+    // pojawia się WYŁĄCZNIE na liście poniżej, nigdy na samym wykresie.
+    const list = Object.entries(effShifts)
+      .filter(([name,s])=> s.type==='shift')
+      .sort(byCategoryThenTime);
+
+    if(list.length===0){
+      body = `<div class="nontrading-card">Nikt nie pracuje tego dnia.</div>`;
+    } else {
+      body = buildDayChart(list);
+      body += list.map(([name,s])=>{
+        const isMe = name === state.myName;
+        const cat = getCategory(name);
+        const tags = getPersonTasks(day, name);
+        const tagsHtml = tags.length ? `<div class="wtags">${tags.map(t=>`<span class="task-tag ${t.type}">${t.label}</span>`).join('')}</div>` : '';
+        return `<div class="worker-row ${isMe?'me':''}">
+          <span class="cat-bar" style="background:${categoryColorCSS(cat)}"></span>
+          <div class="initial">${initials(name)}</div>
+          <div class="wname">${name}${isMe?'<span class="you-tag">TY</span>':''}${s.edited?' <span class="edited-mark" title="Ręcznie zmieniony grafik">✎</span>':''}</div>
+          <div class="wtime-col">
+            <div class="wtime">${s.start}–${s.end}${s.hours?`<span class="wh">${fmtHours(s.hours)}</span>`:''}</div>
+            ${tagsHtml}
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    const training = Object.entries(effShifts)
+      .filter(([n,s])=> s.type==='szkolenie')
+      .sort(byCategoryThenTime);
+    if(training.length){
+      body += `<div class="section-title">Szkolenie / delegacja</div>`;
+      body += training.map(([name,s])=>{
+        const cat = getCategory(name);
+        const tags = getPersonTasks(day, name);
+        const tagsHtml = tags.length ? `<div class="wtags">${tags.map(t=>`<span class="task-tag ${t.type}">${t.label}</span>`).join('')}</div>` : '';
+        return `<div class="worker-row">
+          <span class="cat-bar" style="background:${categoryColorCSS(cat)}"></span>
+          <div class="initial">${initials(name)}</div>
+          <div class="wname">${name}</div>
+          <div class="wtime-col">
+            <span class="badge szkolenie">Szkolenie</span>
+            ${tagsHtml}
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  const dateObj = new Date(day.dateISO);
+  const heading = `${day.weekday}, ${day.day} ${MONTHS_PL[dateObj.getMonth()].toLowerCase()}`;
+
+  main.innerHTML = strip + `<div class="day-heading"><h2>${heading}</h2>${day.headcount!=null?`<span class="count">${day.headcount} os. na sklepie</span>`:''}</div>` + body;
+
+  const chip = main.querySelector('.day-chip.selected');
+  if(chip) chip.scrollIntoView({inline:'center', block:'nearest'});
+}
+
+function selectDay(iso){
+  state.selectedDay = iso;
+  renderDay();
+}
+
+/* ============================ DAY EDIT MODAL (nadgodziny, L4, zmiana czasu) ============================ */
+function openDayEditModal(dateISO){
+  if(!state.myName){ showToast('Najpierw wybierz siebie z listy'); openWhoModal(); return; }
+  const data = state.currentMonthKey ? state.monthsCache[state.currentMonthKey] : null;
+  if(!data) return;
+  const day = data.days.find(d=>d.dateISO===dateISO);
+  if(!day) return;
+
+  const base = day.shifts[state.myName] || {type:'off'};
+  const eff = getShift(day, state.myName);
+  const existing = state.overrides[overrideKey(state.myName, dateISO)];
+
+  const dateObj = new Date(dateISO+'T00:00:00');
+  const heading = `${day.weekday ? day.weekday.charAt(0).toUpperCase()+day.weekday.slice(1) : ''}, ${day.day} ${MONTHS_PL[dateObj.getMonth()].toLowerCase()}`;
+
+  const statusOptions = [
+    ['shift','Pracuję (zmiana)'],
+    ['off','Wolne'],
+    ['urlop','Urlop'],
+    ['l4','L4'],
+    ['szkolenie','Szkolenie / delegacja'],
+  ];
+  const currentStatus = (eff.type==='inne') ? 'off' : eff.type;
+  const optHtml = statusOptions.map(([id,label])=> `<option value="${id}" ${id===currentStatus?'selected':''}>${label}</option>`).join('');
+
+  const startVal = eff.start || base.start || '09:00';
+  const endVal = eff.end || base.end || '17:00';
+  const reasonVal = eff.timeChangeReason || 'manual';
+  const originalHoursForCalc = (base.type === 'shift' && base.hours) ? base.hours : 0;
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.onclick = (e)=>{ if(e.target===backdrop) backdrop.remove(); };
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <h3>${heading}</h3>
+    <div class="field-group">
+      <label class="field-label">Status dnia</label>
+      <select class="field-input" id="editStatus" onchange="updateEditModalVisibility()">${optHtml}</select>
+    </div>
+    <div id="editShiftFields" style="display:${currentStatus==='shift'?'block':'none'}">
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Od</label>
+          <input type="time" class="field-input" id="editStart" value="${startVal}" oninput="updateOvertimePreview(${originalHoursForCalc})">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Do</label>
+          <input type="time" class="field-input" id="editEnd" value="${endVal}" oninput="updateOvertimePreview(${originalHoursForCalc})">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Powód zmiany czasu</label>
+        <select class="field-input" id="editReason">
+          <option value="manual" ${reasonVal==='manual'?'selected':''}>Zmiana grafiku</option>
+          <option value="overtime" ${reasonVal==='overtime'?'selected':''}>Nadgodziny</option>
+          <option value="overtime_pickup" ${reasonVal==='overtime_pickup'?'selected':''}>Odbiór nadgodzin</option>
+        </select>
+      </div>
+      <div class="hint" id="overtimePreview" style="margin-top:-4px;"></div>
+    </div>
+    <button class="btn-primary" style="margin-top:6px; width:100%;" onclick="saveDayEdit('${dateISO}')">Zapisz</button>
+    ${existing ? `<button class="modal-close danger" onclick="clearDayEdit('${dateISO}')">Usuń zmiany i przywróć oryginał</button>` : ''}
+    <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">Anuluj</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+  if(currentStatus==='shift') updateOvertimePreview(originalHoursForCalc);
+}
+function updateEditModalVisibility(){
+  const status = document.getElementById('editStatus').value;
+  document.getElementById('editShiftFields').style.display = status==='shift' ? 'block' : 'none';
+}
+function updateOvertimePreview(originalHours){
+  const startEl = document.getElementById('editStart');
+  const endEl = document.getElementById('editEnd');
+  const previewEl = document.getElementById('overtimePreview');
+  if(!startEl || !endEl || !previewEl) return;
+  const [sh,sm] = (startEl.value||'0:0').split(':').map(Number);
+  const [eh,em] = (endEl.value||'0:0').split(':').map(Number);
+  const newHours = Math.max(((eh*60+em) - (sh*60+sm))/60, 0);
+  const diff = Math.round((newHours - originalHours) * 100) / 100;
+  if(diff === 0){
+    previewEl.textContent = 'Bez zmian względem grafiku — 0 godz. nadgodzin.';
+  } else if(diff > 0){
+    const h = Math.floor(diff), m = Math.round((diff-h)*60);
+    previewEl.textContent = `Nadgodziny: +${h}g ${m}min`;
+  } else {
+    const abs = Math.abs(diff), h = Math.floor(abs), m = Math.round((abs-h)*60);
+    previewEl.textContent = `Odbiór nadgodzin: -${h}g ${m}min`;
+  }
+}
+async function saveDayEdit(dateISO){
+  const status = document.getElementById('editStatus').value;
+  const override = { status };
+  if(status==='shift'){
+    override.start = document.getElementById('editStart').value;
+    override.end = document.getElementById('editEnd').value;
+    override.timeChangeReason = document.getElementById('editReason').value;
+  }
+  await saveOverrideFor(state.myName, dateISO, override);
+  document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove());
+  showToast('Zapisano zmianę');
+  renderAll();
+}
+async function clearDayEdit(dateISO){
+  await saveOverrideFor(state.myName, dateISO, null);
+  document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove());
+  showToast('Przywrócono oryginalny grafik');
+  renderAll();
+}
+window.openDayEditModal = openDayEditModal;
+window.updateEditModalVisibility = updateEditModalVisibility;
+window.updateOvertimePreview = updateOvertimePreview;
+window.saveDayEdit = saveDayEdit;
+window.clearDayEdit = clearDayEdit;
+
+/* ============================ RENDER: WCZYTAJ ============================ */
+function renderLoad(){
+  const main = document.getElementById('main');
+  let html = `<div class="section-title">Wgraj plik grafiku</div>
+  <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+    <div class="icon">📤</div>
+    <h3>Wybierz plik .xlsx</h3>
+    <p>Ten sam plik, który dostajesz od kierownika (eksport z Google Sheets), w tym samym układzie co zawsze.</p>
+  </div>
+  <div class="hint">Nowy plik doda kolejny miesiąc albo zaktualizuje istniejący, jeśli daty się pokrywają. Nazwy pracowników są odczytywane bezpośrednio z pliku, więc mogą się zmieniać miesiąc do miesiąca.</div>`;
+
+  html += `<div class="section-title">Wczytane miesiące</div>`;
+  if(!state.monthsIndex.length){
+    html += `<div class="hint">Nie wczytano jeszcze żadnego grafiku.</div>`;
+  } else {
+    [...state.monthsIndex].sort().reverse().forEach(key=>{
+      const d = state.monthsCache[key];
+      html += `<div class="month-list-item">
+        <div>
+          <div class="mname">${d ? d.label : key}</div>
+          <div class="msub">${d ? d.employees.length+' osób • '+d.days.length+' dni' : 'ładowanie…'}</div>
+        </div>
+        <button class="icon-btn danger" onclick="handleDeleteMonth('${key}')">🗑️</button>
+      </div>`;
+    });
+  }
+
+  html += `<div class="section-title">Twoje imię na grafiku</div>
+  <div class="upload-zone" style="padding:16px;" onclick="openWhoModal()">
+    <p style="margin:0;"><strong>${state.myName || 'Nie wybrano'}</strong> — dotknij, aby zmienić</p>
+  </div>`;
+
+  main.innerHTML = html;
+}
+
+function handleDeleteMonth(key){
+  showConfirmModal('Usunąć ten miesiąc dla wszystkich?', ()=> doDeleteMonth(key));
+}
+async function doDeleteMonth(key){
+  await deleteMonth(key);
+  if(state.currentMonthKey === key){
+    state.currentMonthKey = state.monthsIndex.length ? state.monthsIndex[state.monthsIndex.length-1] : null;
+    if(state.currentMonthKey) await loadMonth(state.currentMonthKey);
+  }
+  renderAll();
+  showToast('Usunięto miesiąc');
+}
+
+/* ============================ RENDER: PENSJA ============================ */
+function defaultSalary(){
+  return { podstawaBrutto:0, prowizjaBrutto:0, premiaPokBrutto:0, premiaUznaniowaBrutto:0, ppk:false, inwIlosc:0, inwKwota:0, wsparcieIlosc:0, wsparcieKwota:0 };
+}
+async function loadSalary(){
+  const raw = await storeGet('grafik:salary', false);
+  state.salary = raw ? JSON.parse(raw) : defaultSalary();
+}
+async function saveSalary(){
+  await storeSet('grafik:salary', JSON.stringify(state.salary), false);
+}
+
+function computeNetFromGross(brutto, ppk){
+  if(!brutto) return 0;
+  const emerytalne = brutto*0.0976;
+  const rentowe = brutto*0.015;
+  const chorobowe = brutto*0.0245;
+  const zus = emerytalne + rentowe + chorobowe;
+  const ppkEmployee = ppk ? brutto*0.02 : 0;
+  const podstawaZdrowotna = brutto - zus;
+  const zdrowotne = podstawaZdrowotna*0.09;
+  const kosztyUzyskania = 250;
+  const kwotaWolna = 300;
+  const podstawaPIT = Math.max(Math.round(podstawaZdrowotna - kosztyUzyskania), 0);
+  const pit = Math.max(podstawaPIT*0.12 - kwotaWolna, 0);
+  return Math.round((brutto - zus - zdrowotne - pit - ppkEmployee) * 100) / 100;
+}
+function computeSalary(){
+  const s = state.salary || defaultSalary();
+  const data = state.currentMonthKey ? state.monthsCache[state.currentMonthKey] : null;
+  const hasCtx = !!(data && state.myName);
+  const inwTotal = (s.inwIlosc||0) * (s.inwKwota||0);
+  const wspTotal = (s.wsparcieIlosc||0) * (s.wsparcieKwota||0);
+  const premiaDodatkowa = inwTotal + wspTotal;
+
+  const baseHours = hasCtx ? computeOriginalScheduleHours(data, state.myName) : 0;
+  const stawka = baseHours>0 ? (s.podstawaBrutto||0) / baseHours : 0;
+
+  const adj = hasCtx ? computePayAdjustments(data, state.myName) : {overtimePoolHours:0, regularAdjustHours:0};
+  const nadgodzinyBrutto = stawka * 1.5 * adj.overtimePoolHours;
+  const regularAdjustBrutto = stawka * adj.regularAdjustHours;
+
+  const absence = hasCtx ? computeAbsencePay(data, state.myName, stawka) : {urlopHours:0, l4Hours:0, urlopBrutto:0, l4Brutto:0};
+
+  const brutto = (s.podstawaBrutto||0) + (s.prowizjaBrutto||0) + (s.premiaPokBrutto||0) + (s.premiaUznaniowaBrutto||0)
+    + premiaDodatkowa + nadgodzinyBrutto + regularAdjustBrutto + absence.urlopBrutto + absence.l4Brutto;
+  const netto = computeNetFromGross(brutto, s.ppk);
+  return {
+    inwTotal, wspTotal, premiaDodatkowa, baseHours, stawka,
+    overtimePoolHours: adj.overtimePoolHours, nadgodzinyBrutto,
+    regularAdjustHours: adj.regularAdjustHours, regularAdjustBrutto,
+    urlopHours: absence.urlopHours, urlopBrutto: absence.urlopBrutto,
+    l4Hours: absence.l4Hours, l4Brutto: absence.l4Brutto,
+    brutto, netto
+  };
+}
+function fmtPLN(n){
+  return (Math.round((n||0)*100)/100).toLocaleString('pl-PL', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function renderSalary(){
+  const main = document.getElementById('main');
+  if(!state.salary) state.salary = defaultSalary();
+  const s = state.salary;
+  const hasContext = state.currentMonthKey && state.myName;
+
+  main.innerHTML = `
+  <div class="disclaimer-box">⚠️ To jedynie szacunkowa wartość pensji, jaką pracownik może otrzymać za godziny i premie. Nie stanowi to zobowiązania ani gwarancji wysokości wypłaty.</div>
+
+  <div class="section-title">Dane do wyliczenia</div>
+  <div class="pay-card">
+    <div class="field-group"><label class="field-label">Podstawa Brutto (zł)</label>
+      <input type="number" step="0.01" min="0" class="field-input" value="${s.podstawaBrutto||''}" oninput="handleSalaryInput('podstawaBrutto', this.value)"></div>
+    <div class="field-group"><label class="field-label">Moja Prowizja Brutto (zł)</label>
+      <input type="number" step="0.01" min="0" class="field-input" value="${s.prowizjaBrutto||''}" oninput="handleSalaryInput('prowizjaBrutto', this.value)"></div>
+    <div class="field-group"><label class="field-label">Premia POK Brutto (zł)</label>
+      <input type="number" step="0.01" min="0" class="field-input" value="${s.premiaPokBrutto||''}" oninput="handleSalaryInput('premiaPokBrutto', this.value)"></div>
+    <div class="field-group"><label class="field-label">Premia Uznaniowa / Konkursy (zł)</label>
+      <input type="number" step="0.01" min="0" class="field-input" value="${s.premiaUznaniowaBrutto||''}" oninput="handleSalaryInput('premiaUznaniowaBrutto', this.value)"></div>
+    <label class="checkbox-row">
+      <input type="checkbox" ${s.ppk?'checked':''} onchange="handleSalaryInput('ppk', this.checked)">
+      <span>Uczestniczę w PPK</span>
+    </label>
+  </div>
+
+  <div class="section-title">Premia dodatkowa</div>
+  <div class="pay-card">
+    <div class="pay-subtitle">Inwentaryzacje</div>
+    <div class="field-row">
+      <div class="field-group"><label class="field-label">Ilość</label>
+        <input type="number" step="1" min="0" class="field-input" value="${s.inwIlosc||''}" oninput="handleSalaryInput('inwIlosc', this.value)"></div>
+      <div class="field-group"><label class="field-label">KWOTA ZA 1 BRUTTO</label>
+        <input type="number" step="0.01" min="0" class="field-input" value="${s.inwKwota||''}" oninput="handleSalaryInput('inwKwota', this.value)"></div>
+    </div>
+    <div class="pay-subtotal">Razem: <span id="payInwTotal">0,00</span> zł</div>
+
+    <div class="pay-subtitle" style="margin-top:14px;">Wsparcia</div>
+    <div class="field-row">
+      <div class="field-group"><label class="field-label">Ilość</label>
+        <input type="number" step="1" min="0" class="field-input" value="${s.wsparcieIlosc||''}" oninput="handleSalaryInput('wsparcieIlosc', this.value)"></div>
+      <div class="field-group"><label class="field-label">KWOTA ZA 1 BRUTTO</label>
+        <input type="number" step="0.01" min="0" class="field-input" value="${s.wsparcieKwota||''}" oninput="handleSalaryInput('wsparcieKwota', this.value)"></div>
+    </div>
+    <div class="pay-subtotal">Razem: <span id="payWspTotal">0,00</span> zł</div>
+  </div>
+
+  ${hasContext ? '' : `<div class="hint">Wybierz siebie i wczytaj grafik, aby uwzględnić nadgodziny z bieżącego miesiąca w wyliczeniu.</div>`}
+
+  <button class="btn-primary" style="width:100%; margin:14px 0 4px;" onclick="updateSalaryResults()">Oblicz</button>
+
+  <div id="payResultCard"></div>
+  `;
+
+  updateSalaryResults();
+}
+function handleSalaryInput(field, value){
+  if(!state.salary) state.salary = defaultSalary();
+  state.salary[field] = (field==='ppk') ? !!value : (parseFloat(value) || 0);
+  saveSalary();
+  updateSalaryResults();
+}
+function updateSalaryResults(){
+  const r = computeSalary();
+  const inwEl = document.getElementById('payInwTotal');
+  const wspEl = document.getElementById('payWspTotal');
+  if(inwEl) inwEl.textContent = fmtPLN(r.inwTotal);
+  if(wspEl) wspEl.textContent = fmtPLN(r.wspTotal);
+  const card = document.getElementById('payResultCard');
+  if(!card) return;
+  card.innerHTML = `
+    <div class="pay-result-card">
+      <div class="pay-breakdown">
+        ${r.nadgodzinyBrutto!==0?`<div class="pb-row"><span>Nadgodziny (${fmtSignedHours(r.overtimePoolHours)})</span><span>${fmtPLN(r.nadgodzinyBrutto)} zł</span></div>`:''}
+        ${r.regularAdjustBrutto!==0?`<div class="pb-row"><span>Zmiana grafiku (${fmtSignedHours(r.regularAdjustHours)})</span><span>${fmtPLN(r.regularAdjustBrutto)} zł</span></div>`:''}
+        ${r.urlopHours>0?`<div class="pb-row"><span>Urlop</span><span>${fmtPLN(r.urlopBrutto)} zł</span></div>`:''}
+        ${r.l4Hours>0?`<div class="pb-row"><span>L4 (80%)</span><span>${fmtPLN(r.l4Brutto)} zł</span></div>`:''}
+        <div class="pb-row"><span>Premia dodatkowa</span><span>${fmtPLN(r.premiaDodatkowa)} zł</span></div>
+      </div>
+      <div class="pay-total-row">
+        <div class="pt-label">Brutto (orientacyjnie)</div>
+        <div class="pt-value">${fmtPLN(r.brutto)} zł</div>
+      </div>
+      <div class="pay-total-row net">
+        <div class="pt-label">Netto (orientacyjnie)</div>
+        <div class="pt-value">${fmtPLN(r.netto)} zł</div>
+      </div>
+      <div class="hint" style="margin-top:10px;">Wyliczenie orientacyjne / prognozowane — nie stanowi zobowiązania.</div>
+    </div>
+  `;
+}
+window.handleSalaryInput = handleSalaryInput;
+window.updateSalaryResults = updateSalaryResults;
+
+/* ============================ RENDER: OPCJE (role assignment) ============================ */
+function renderOptions(){
+  const main = document.getElementById('main');
+  const data = state.currentMonthKey ? state.monthsCache[state.currentMonthKey] : null;
+
+  if(!data){
+    main.innerHTML = emptyStateHTML('⚙️','Brak wczytanego grafiku','Wczytaj najpierw plik, aby przypisać role pracownikom.');
+    return;
+  }
+
+  const sorted = [...data.employees].sort((a,b)=> categoryOrderIndex(a) - categoryOrderIndex(b) || a.localeCompare(b,'pl'));
+
+  let html = `<div class="section-title">Role pracowników</div>
+  <div class="hint" style="margin-top:0; margin-bottom:12px;">Role decydują o kolorze i kolejności na wykresie w zakładce „Kto pracuje”. Kierowników nie można zmienić. Jeśli w kolejnym miesiącu dojdzie nowa osoba, pojawi się tu jako „Nieprzypisany” — wystarczy wybrać jej rolę.</div>`;
+
+  html += sorted.map(name=>{
+    const cat = getCategory(name);
+    const isUnassigned = cat.id === 'unassigned';
+    const isLocked = !ROLE_DEFS[cat.id].editable;
+    const options = EDITABLE_ROLES.map(id=>
+      `<option value="${id}" ${id===cat.id?'selected':''}>${ROLE_DEFS[id].label}</option>`
+    ).join('');
+    return `<div class="role-row ${isUnassigned?'unassigned':''}">
+      <span class="cat-bar" style="background:${categoryColorCSS(cat)}"></span>
+      <div class="rname">${name}${isUnassigned?'<span class="rsub">Wybierz rolę</span>':''}</div>
+      ${isLocked
+        ? `<div class="role-locked">${cat.label}</div>`
+        : `<select class="role-select" onchange="handleRoleChange('${name.replace(/'/g,"\\'")}', this.value)">${options}</select>`
+      }
+    </div>`;
+  }).join('');
+
+  main.innerHTML = html;
+}
+async function handleRoleChange(name, roleId){
+  await setRole(name, roleId);
+  showToast(`${name}: ${ROLE_DEFS[roleId].label}`);
+  renderOptions();
+}
+window.handleRoleChange = handleRoleChange;
+
+/* ============================ FILE UPLOAD ============================ */
+document.getElementById('fileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const buf = await file.arrayBuffer();
+    const parsed = parseWorkbookArrayBuffer(buf);
+    await ensureRolesForEmployees(parsed.employees);
+    await saveMonth(parsed);
+    state.currentMonthKey = parsed.monthKey;
+    showToast(`Wczytano: ${parsed.label}`);
+    renderAll();
+  } catch(err){
+    console.error(err);
+    showToast(err.message || 'Nie udało się wczytać pliku');
+  }
+  e.target.value = '';
+});
+
+/* ============================ WHO MODAL ============================ */
+/* ============================ CONFIRM MODAL (zamiast window.confirm — nie działa w sandboksowanym środowisku) ============================ */
+let __pendingConfirmFn = null;
+function showConfirmModal(message, fn){
+  __pendingConfirmFn = fn;
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.onclick = (e)=>{ if(e.target===backdrop) cancelConfirmModal(); };
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <h3>Potwierdzenie</h3>
+    <p style="font-size:14px; color:var(--ink-soft); line-height:1.5; margin:0 0 16px;">${message}</p>
+    <button class="btn-primary" style="width:100%;" onclick="runConfirmedAction()">Tak, kontynuuj</button>
+    <button class="modal-close" onclick="cancelConfirmModal()">Anuluj</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+}
+function cancelConfirmModal(){
+  document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove());
+  __pendingConfirmFn = null;
+}
+function runConfirmedAction(){
+  document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove());
+  const fn = __pendingConfirmFn;
+  __pendingConfirmFn = null;
+  if(fn) fn();
+}
+window.showConfirmModal = showConfirmModal;
+window.cancelConfirmModal = cancelConfirmModal;
+window.runConfirmedAction = runConfirmedAction;
+
+function openWhoModal(){
+  const data = state.currentMonthKey ? state.monthsCache[state.currentMonthKey] : null;
+  const names = data ? data.employees : [];
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.onclick = (e)=>{ if(e.target===backdrop) backdrop.remove(); };
+  backdrop.innerHTML = `<div class="modal-sheet">
+    <h3>Kim jesteś?</h3>
+    ${names.length ? names.map(n=>`<div class="name-option ${n===state.myName?'active':''}" onclick="pickName('${n.replace(/'/g,"\\'")}')">
+        <div class="initial">${initials(n)}</div><span>${n}</span>
+      </div>`).join('') : '<p class="hint">Wczytaj najpierw plik grafiku, aby zobaczyć listę osób.</p>'}
+    <button class="modal-close" onclick="this.closest('.modal-backdrop').remove()">Anuluj</button>
+  </div>`;
+  document.body.appendChild(backdrop);
+}
+async function pickName(name){
+  await saveMyName(name);
+  document.querySelectorAll('.modal-backdrop').forEach(el=>el.remove());
+  showToast(`Wybrano: ${name}`);
+  renderAll();
+}
+window.openWhoModal = openWhoModal;
+window.pickName = pickName;
+window.goToDay = goToDay;
+window.selectDay = selectDay;
+window.handleDeleteMonth = handleDeleteMonth;
+
+/* ============================ TABS & NAV ============================ */
+function setTab(tab){
+  state.activeTab = tab;
+  document.querySelectorAll('.navbtn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  renderTab();
+}
+function renderTab(){
+  if(state.activeTab==='mine') renderMine();
+  else if(state.activeTab==='day') renderDay();
+  else if(state.activeTab==='salary') renderSalary();
+  else if(state.activeTab==='options') renderOptions();
+  else renderLoad();
+}
+document.querySelectorAll('.navbtn').forEach(b=> b.addEventListener('click', ()=> setTab(b.dataset.tab)));
+document.getElementById('whoBtn').addEventListener('click', openWhoModal);
+
+/* ============================ THEME ============================ */
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+  document.getElementById('themeToggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+document.getElementById('themeToggle').addEventListener('click', async ()=>{
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  await storeSet('grafik:theme', next, false);
+});
+
+document.getElementById('prevMonth').addEventListener('click', async ()=>{
+  const idx = state.monthsIndex.indexOf(state.currentMonthKey);
+  if(idx>0){ state.currentMonthKey = state.monthsIndex[idx-1]; await loadMonth(state.currentMonthKey); renderAll(); }
+});
+document.getElementById('nextMonth').addEventListener('click', async ()=>{
+  const idx = state.monthsIndex.indexOf(state.currentMonthKey);
+  if(idx>-1 && idx<state.monthsIndex.length-1){ state.currentMonthKey = state.monthsIndex[idx+1]; await loadMonth(state.currentMonthKey); renderAll(); }
+});
+
+function renderAll(){
+  renderTopBar();
+  renderTab();
+}
+
+/* ============================ SEED DATA (pre-loaded month) ============================ */
+async function maybeSeed(){
+  if(state.monthsIndex.length) return; // already have data, don't overwrite
+  const tag = document.getElementById('seedData');
+  if(!tag) return;
+  try{
+    const parsed = JSON.parse(tag.textContent);
+    await saveMonth(parsed);
+    state.currentMonthKey = parsed.monthKey;
+  } catch(e){
+    console.error('Nie udało się wczytać danych startowych', e);
+  }
+}
+
+/* ============================ INIT ============================ */
+async function init(){
+  const savedTheme = await storeGet('grafik:theme', false);
+  applyTheme(savedTheme || 'light');
+
+  await loadIndex();
+  await loadMyName();
+  await loadRoleAssignments();
+  await loadOverrides();
+  await loadSalary();
+  await maybeSeed();
+  if(state.monthsIndex.length){
+    for(const key of state.monthsIndex) await loadMonth(key);
+    const todayKey = monthKeyOf(new Date());
+    state.currentMonthKey = state.monthsIndex.includes(todayKey) ? todayKey : state.monthsIndex[state.monthsIndex.length-1];
+    if(state.currentMonthKey) await ensureRolesForEmployees(state.monthsCache[state.currentMonthKey].employees);
+  }
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
