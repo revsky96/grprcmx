@@ -666,7 +666,7 @@ async function ensureRolesForEmployees(employees){
 }
 
 /* ============================ VERSION / LAYOUT ============================ */
-const APP_VERSION = '2.0.4';
+const APP_VERSION = '2.0.5';
 const desktopMQ = (typeof window !== 'undefined' && window.matchMedia) ? window.matchMedia('(min-width: 1000px)') : null;
 function applyLayoutMode(){
   const isDesktop = !!(desktopMQ && desktopMQ.matches);
